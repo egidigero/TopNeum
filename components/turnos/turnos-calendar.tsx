@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import type { ReactElement } from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -19,6 +20,7 @@ interface Turno {
   marca_vehiculo?: string
   patente?: string
   origen: string
+  created_at: string
 }
 
 type ViewMode = "day" | "week" | "month"
@@ -252,7 +254,7 @@ function DayView({
   currentDate: Date
   turnos: Turno[]
   onTurnoClick: (turno: Turno) => void
-  getEstadoBadge: (estado: string) => JSX.Element
+  getEstadoBadge: (estado: string) => ReactElement
 }) {
   const hours = Array.from({ length: 10 }, (_, i) => i + 8) // 8 AM a 5 PM
 

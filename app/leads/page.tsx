@@ -21,11 +21,16 @@ export default async function LeadsPage() {
       l.asignado_a,
       l.created_at,
       l.updated_at,
+      l.origen,
+      l.ultimo_contacto_at,
+      l.mensaje_inicial,
+      l.notas,
       u.nombre as asignado_nombre,
       -- Datos adicionales
       (SELECT medida_neumatico FROM lead_consultas WHERE lead_id = l.id ORDER BY created_at DESC LIMIT 1) as ultima_medida,
       (SELECT COUNT(*) FROM lead_consultas WHERE lead_id = l.id) as total_consultas,
-      (SELECT COUNT(*) FROM lead_pedidos WHERE lead_id = l.id) as total_pedidos
+      (SELECT COUNT(*) FROM lead_pedidos WHERE lead_id = l.id) as total_pedidos,
+      (SELECT COUNT(*) FROM pagos WHERE lead_id = l.id AND estado = 'confirmado') as pagos_count
     FROM leads l
     LEFT JOIN users u ON l.asignado_a = u.id
     WHERE l.estado NOT IN ('pedido_finalizado', 'abandonado')
@@ -47,6 +52,11 @@ export default async function LeadsPage() {
     asignado_nombre: l.asignado_nombre || null,
     ultima_interaccion: l.ultima_interaccion || null,
     created_at: String(l.created_at),
+    origen: String(l.origen || 'whatsapp'),
+    ultimo_contacto_at: l.ultimo_contacto_at || null,
+    pagos_count: Number(l.pagos_count || 0),
+    mensaje_inicial: String(l.mensaje_inicial || ''),
+    notas: l.notas || null,
   }))
 
   // Fetch users for assignment

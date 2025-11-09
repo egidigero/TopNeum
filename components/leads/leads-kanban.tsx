@@ -34,6 +34,11 @@ interface Lead {
   asignado_nombre: string | null
   ultima_interaccion: string | null
   created_at: string
+  origen: string
+  ultimo_contacto_at: string | null
+  pagos_count: number
+  mensaje_inicial: string
+  notas: string | null
 }
 
 interface LeadsKanbanProps {
