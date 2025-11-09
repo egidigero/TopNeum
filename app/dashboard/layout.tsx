@@ -15,7 +15,7 @@ export default async function DashboardLayout({
   }
 
   return (
-    <div className="flex h-screen bg-slate-950">
+    <div className="flex h-screen bg-slate-50">
       <aside className="w-64 flex-shrink-0">
         <AppSidebar user={user} />
       </aside>

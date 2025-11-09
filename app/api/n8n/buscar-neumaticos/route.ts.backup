@@ -1,0 +1,220 @@
+import { NextRequest, NextResponse } from "next/server"
+import { sql } from "@/lib/db"
+import { normalizarMedida, normalizarParaBusqueda } from "@/lib/normalizar-medida"
+
+// Endpoint para n8n - Búsqueda inteligente de neumáticos
+export async function POST(request: NextRequest) {
+  try {
+    // Validar API Key para seguridad
+    const apiKey = request.headers.get('x-api-key')
+    if (apiKey !== process.env.N8N_API_KEY) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const body = await request.json()
+    const { medida, vehiculo, marca } = body
+
+    if (!medida) {
+      return NextResponse.json({ 
+        error: 'Medida es requerida',
+        ejemplo: '205/55R16 o 205 55 16'
+      }, { status: 400 })
+    }
+
+    // Normalizar la medida (quitar espacios, slashes, guiones)
+    const medidaNormalizada = medida
+      .toUpperCase()
+      .replace(/[\/\s\-]/g, '') // Quita /, espacios y -
+      .trim()
+
+    console.log('🔍 Búsqueda:', { medida, medidaNormalizada, vehiculo, marca })
+
+    // Buscar productos que coincidan con la medida
+    // La medida puede venir como: 205/55R16, 205 55 16, 205-55-16, etc.
+    const query = sql`
+      SELECT 
+        p.id,
+        p.sku,
+        p.marca,
+        p.familia,
+        p.diseno,
+        p.medida,
+        p.descripcion_larga,
+        p.stock,
+        p.cuota_3,
+        p.cuota_6,
+        p.cuota_12,
+        p.efectivo_bsas_sin_iva as contado
+      FROM products p
+      WHERE 
+        -- Normalizar medida para comparación
+        REPLACE(REPLACE(REPLACE(UPPER(p.medida), '/', ''), ' ', ''), '-', '') 
+        LIKE ${`%${medidaNormalizada}%`}
+        AND p.stock IS NOT NULL
+        AND p.stock != ''
+      ORDER BY 
+        -- Priorizar por marca si se especifica
+        CASE 
+          WHEN ${marca} IS NOT NULL AND UPPER(p.marca) LIKE ${`%${marca?.toUpperCase()}%`} THEN 1
+          ELSE 2
+        END,
+        -- Ordenar por marca (Michelin primero, luego otras premium, luego económicas)
+        CASE 
+          WHEN UPPER(p.marca) = 'MICHELIN' THEN 1
+          WHEN UPPER(p.marca) = 'BRIDGESTONE' THEN 2
+          WHEN UPPER(p.marca) = 'PIRELLI' THEN 3
+          WHEN UPPER(p.marca) = 'GOODYEAR' THEN 4
+          WHEN UPPER(p.marca) = 'YOKOHAMA' THEN 5
+          WHEN UPPER(p.marca) = 'HANKOOK' THEN 6
+          WHEN UPPER(p.marca) = 'CONTINENTAL' THEN 7
+          ELSE 8
+        END,
+        -- Luego por precio (más caro primero para mostrar variedad)
+        p.cuota_3 DESC NULLS LAST
+      LIMIT 20
+    `
+
+    const productos = await query
+
+    if (productos.length === 0) {
+      return NextResponse.json({
+        success: true,
+        encontrados: 0,
+        mensaje: `❌ No encontramos neumáticos para la medida *${medida}*.\n\n¿Podrías verificar la medida? La encontrás en el lateral del neumático.\n\nFormato: 205/55R16 o 205/55/16`,
+        productos: []
+      })
+    }
+
+    // Formatear productos para el mensaje de WhatsApp
+    const productosFormateados = productos.map((p: any) => {
+      const precio3Cuotas = p.cuota_3 ? Math.round(Number(p.cuota_3)) : null
+      const precioContado = p.contado ? Math.round(Number(p.contado)) : null
+      const precio6Cuotas = p.cuota_6 ? Math.round(Number(p.cuota_6)) : null
+      const precio12Cuotas = p.cuota_12 ? Math.round(Number(p.cuota_12)) : null
+
+      // Determinar disponibilidad
+      let disponibilidad = ''
+      const stockStr = String(p.stock || '').toUpperCase().trim()
+      if (stockStr === 'OK' || (Number(p.stock) > 0)) {
+        disponibilidad = ' (entrega inmediata)'
+      }
+
+      return {
+        id: p.id,
+        sku: p.sku,
+        marca: p.marca,
+        familia: p.familia,
+        diseno: p.diseno,
+        medida: p.medida,
+        descripcion: p.descripcion_larga,
+        stock: p.stock,
+        disponibilidad,
+        precios: {
+          cuota_3: precio3Cuotas,
+          cuota_6: precio6Cuotas,
+          cuota_12: precio12Cuotas,
+          contado: precioContado
+        }
+      }
+    })
+
+    // Generar mensaje de WhatsApp
+    const mensajeWhatsApp = generarMensajeWhatsApp(medida, productosFormateados, vehiculo)
+
+    return NextResponse.json({
+      success: true,
+      encontrados: productos.length,
+      medida_buscada: medida,
+      vehiculo: vehiculo || null,
+      marca_filtro: marca || null,
+      mensaje: mensajeWhatsApp,
+      productos: productosFormateados
+    })
+
+  } catch (error: any) {
+    console.error('Error en búsqueda de neumáticos:', error)
+    return NextResponse.json({ 
+      error: error.message || 'Error interno del servidor' 
+    }, { status: 500 })
+  }
+}
+
+// Función para generar el mensaje formateado para WhatsApp
+function generarMensajeWhatsApp(medida: string, productos: any[], vehiculo?: string): string {
+  if (productos.length === 0) {
+    return `❌ No encontramos neumáticos para la medida *${medida}*.\n\n¿Podrías verificar la medida? La encontrás en el lateral del neumático.\n\nFormato: 205/55R16`
+  }
+
+  const formatPrecio = (precio: number | null) => {
+    if (!precio) return 'Consultar'
+    return `$${precio.toLocaleString('es-AR')}`
+  }
+
+  let mensaje = vehiculo 
+    ? `🚗 *${vehiculo.toUpperCase()}* - Medida *${medida}*\n\n`
+    : `🛞 Cotización para medida *${medida}*\n\n`
+
+  mensaje += `Encontramos *${productos.length} opciones* para vos:\n\n`
+  mensaje += `━━━━━━━━━━━━━━━━━━\n\n`
+
+  productos.forEach((p, index) => {
+    // Línea de producto
+    mensaje += `*${p.medida} ${p.marca.toUpperCase()} ${p.diseno.toUpperCase()}*${p.disponibilidad}\n\n`
+
+    // Precios
+    if (p.precios.cuota_3) {
+      mensaje += `💳 *3 CUOTAS:* ${formatPrecio(p.precios.cuota_3)}\n`
+    }
+    if (p.precios.contado) {
+      mensaje += `💵 *CONTADO:* ${formatPrecio(p.precios.contado)}\n`
+    }
+
+    mensaje += `\n`
+
+    // Separador entre productos
+    if (index < productos.length - 1) {
+      mensaje += `────────────────────\n\n`
+    }
+  })
+
+  mensaje += `━━━━━━━━━━━━━━━━━━\n\n`
+  mensaje += `✅ *Todos incluyen:*\n`
+  mensaje += `🚚 Envío GRATIS a todo el país (2 o más)\n`
+  mensaje += `🔧 Colocación BONIFICADA (llevando 4)\n`
+  mensaje += `🛡 5 años de garantía oficial\n\n`
+  mensaje += `📦 *Consultá por 6 y 12 cuotas*\n\n`
+  mensaje += `¿Querés avanzar con alguno? 😊`
+
+  return mensaje
+}
+
+// GET endpoint para documentación
+export async function GET() {
+  return NextResponse.json({
+    endpoint: '/api/n8n/buscar-neumaticos',
+    method: 'POST',
+    descripcion: 'Busca neumáticos en la base de datos y devuelve mensaje formateado para WhatsApp',
+    headers: {
+      'x-api-key': 'REQUIRED - Tu API key de n8n',
+      'Content-Type': 'application/json'
+    },
+    body: {
+      medida: 'REQUIRED - Medida del neumático (ej: 205/55R16, 205 55 16)',
+      vehiculo: 'OPTIONAL - Tipo de vehículo (ej: auto, SUV, camioneta)',
+      marca: 'OPTIONAL - Marca preferida (ej: Michelin, Yokohama)'
+    },
+    ejemplo: {
+      medida: '205/55R16',
+      vehiculo: 'auto',
+      marca: 'Michelin'
+    },
+    respuesta: {
+      success: true,
+      encontrados: 10,
+      medida_buscada: '205/55R16',
+      vehiculo: 'auto',
+      mensaje: '(Mensaje formateado para WhatsApp)',
+      productos: []
+    }
+  })
+}

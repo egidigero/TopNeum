@@ -27,12 +27,19 @@ interface ProductoFormProps {
   }
 }
 
-export function ProductoForm({ producto }: ProductoFormProps) {
+interface ProductoFormPropsExtended extends ProductoFormProps {
+  onModal?: boolean
+}
+
+import { DialogClose } from "@/components/ui/dialog"
+
+export function ProductoForm({ producto, onModal = false }: ProductoFormPropsExtended) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
   const [formData, setFormData] = useState({
     marca: producto?.marca || "",
+    familia: (producto as any)?.familia || "",
     diseno: producto?.diseno || "",
     modelo: producto?.modelo || "",
     medida: producto?.medida || "",
@@ -42,6 +49,16 @@ export function ProductoForm({ producto }: ProductoFormProps) {
     precio_lista_base: producto?.precio_lista_base || null,
     activo: producto?.activo ?? true,
   })
+
+  const isFormValid =
+    formData.marca.trim() !== "" &&
+    formData.familia.trim() !== "" &&
+    formData.diseno.trim() !== "" &&
+    formData.modelo.trim() !== "" &&
+    formData.medida.trim() !== "" &&
+    formData.codigo.trim() !== "" &&
+    formData.costo !== undefined &&
+    !Number.isNaN(Number(formData.costo))
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -77,12 +94,23 @@ export function ProductoForm({ producto }: ProductoFormProps) {
 
   return (
     <div className="max-w-3xl">
-      <Link href="/catalogo">
-        <Button variant="ghost" className="mb-4 text-slate-400 hover:text-white">
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Volver al catálogo
-        </Button>
-      </Link>
+      {!onModal ? (
+        <Link href="/catalogo">
+          <Button variant="ghost" className="mb-4 text-slate-400 hover:text-white">
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Volver al catálogo
+          </Button>
+        </Link>
+      ) : (
+        <div className="mb-4">
+          <DialogClose>
+            <Button variant="ghost" className="text-slate-400 hover:text-white">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Volver
+            </Button>
+          </DialogClose>
+        </div>
+      )}
 
       <Card className="bg-slate-900 border-slate-800">
         <CardHeader>
@@ -101,13 +129,35 @@ export function ProductoForm({ producto }: ProductoFormProps) {
                 <Label htmlFor="marca" className="text-slate-200">
                   Marca *
                 </Label>
-                <Input
+                <select
                   id="marca"
                   value={formData.marca}
                   onChange={(e) => setFormData({ ...formData, marca: e.target.value })}
                   required
+                  className="w-full px-3 py-2 bg-slate-800 border-slate-700 rounded text-white"
+                >
+                  <option value="">Seleccionar marca</option>
+                  <option value="Yokohama">Yokohama</option>
+                  <option value="Hankook">Hankook</option>
+                  <option value="LingLong">LingLong</option>
+                  <option value="Laufenn">Laufenn</option>
+                  <option value="Nankang">Nankang</option>
+                  <option value="Michelin">Michelin</option>
+                  <option value="BFGoodrich">BFGoodrich</option>
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="familia" className="text-slate-200">
+                  Familia *
+                </Label>
+                <Input
+                  id="familia"
+                  value={(formData as any).familia}
+                  onChange={(e) => setFormData({ ...formData, familia: e.target.value })}
+                  required
                   className="bg-slate-800 border-slate-700 text-white"
-                  placeholder="Michelin"
+                  placeholder="Ej: Touring, Performance"
                 />
               </div>
 
@@ -143,14 +193,51 @@ export function ProductoForm({ producto }: ProductoFormProps) {
                 <Label htmlFor="medida" className="text-slate-200">
                   Medida *
                 </Label>
-                <Input
+                {/* Common tyre sizes - sorted for easier selection */}
+                <select
                   id="medida"
                   value={formData.medida}
                   onChange={(e) => setFormData({ ...formData, medida: e.target.value })}
                   required
-                  className="bg-slate-800 border-slate-700 text-white"
-                  placeholder="205/55R16"
-                />
+                  className="w-full px-3 py-2 bg-slate-800 border-slate-700 rounded text-white"
+                >
+                  <option value="">Seleccionar medida</option>
+                  {[
+                    "155/65R14",
+                    "165/65R13",
+                    "165/70R13",
+                    "175/65R14",
+                    "175/70R13",
+                    "185/60R14",
+                    "185/65R14",
+                    "185/65R15",
+                    "195/50R15",
+                    "195/55R15",
+                    "195/60R15",
+                    "195/65R15",
+                    "205/50R16",
+                    "205/55R16",
+                    "205/65R15",
+                    "215/45R17",
+                    "215/55R16",
+                    "225/45R17",
+                    "225/50R17",
+                    "225/55R17",
+                    "235/45R17",
+                    "235/50R18",
+                    "245/45R17",
+                    "255/40R18",
+                    "265/35R18",
+                    "275/40R18",
+                    "285/35R19",
+                    "295/35R21"
+                  ].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))
+                    .map((m) => (
+                      <option key={m} value={m}>
+                        {m}
+                      </option>
+                    ))}
+                </select>
               </div>
 
               <div className="space-y-2">
@@ -234,14 +321,26 @@ export function ProductoForm({ producto }: ProductoFormProps) {
             </div>
 
             <div className="flex gap-4">
-              <Button type="submit" className="bg-blue-600 hover:bg-blue-700" disabled={loading}>
+              <Button
+                type="submit"
+                className="bg-blue-600 hover:bg-blue-700"
+                disabled={loading || !isFormValid}
+              >
                 {loading ? "Guardando..." : producto ? "Actualizar Producto" : "Crear Producto"}
               </Button>
-              <Link href="/catalogo">
-                <Button type="button" variant="outline" className="border-slate-700 text-slate-300 bg-transparent">
-                  Cancelar
-                </Button>
-              </Link>
+              {onModal ? (
+                <DialogClose>
+                  <Button type="button" variant="outline" className="border-slate-700 text-slate-300 bg-transparent">
+                    Cancelar
+                  </Button>
+                </DialogClose>
+              ) : (
+                <Link href="/catalogo">
+                  <Button type="button" variant="outline" className="border-slate-700 text-slate-300 bg-transparent">
+                    Cancelar
+                  </Button>
+                </Link>
+              )}
             </div>
           </form>
         </CardContent>

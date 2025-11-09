@@ -10,29 +10,30 @@ import { LeadDetailPanel } from "./lead-detail-panel"
 import type { AuthUser } from "@/lib/auth"
 
 type LeadEstado =
-  | "nuevo"
-  | "contactado"
-  | "cotizado"
-  | "esperando_pago"
-  | "pagado_pendiente_verificacion"
-  | "pago_verificado"
-  | "convertido_a_pedido"
-  | "perdido"
+  | "conversacion_iniciada"
+  | "consulta_producto"
+  | "cotizacion_enviada"
+  | "en_proceso_de_pago"
+  | "pagado"
+  | "turno_pendiente"
+  | "turno_agendado"
+  | "abandonado"
 
 interface Lead {
   id: string
   nombre: string
   telefono: string
   canal: string
-  mensaje_inicial: string
-  origen: string
+  region: string
   estado: LeadEstado
+  whatsapp_label: string
+  ultima_medida: string | null
+  total_consultas: number
+  total_pedidos: number
   asignado_a: string | null
   asignado_nombre: string | null
-  ultimo_contacto_at: string | null
-  notas: string | null
+  ultima_interaccion: string | null
   created_at: string
-  pagos_count: number
 }
 
 interface LeadsKanbanProps {
@@ -42,14 +43,14 @@ interface LeadsKanbanProps {
 }
 
 const ESTADOS: Array<{ value: LeadEstado; label: string; color: string }> = [
-  { value: "nuevo", label: "Nuevo", color: "bg-blue-500" },
-  { value: "contactado", label: "Contactado", color: "bg-cyan-500" },
-  { value: "cotizado", label: "Cotizado", color: "bg-purple-500" },
-  { value: "esperando_pago", label: "Esperando Pago", color: "bg-yellow-500" },
-  { value: "pagado_pendiente_verificacion", label: "Pago Pendiente", color: "bg-orange-500" },
-  { value: "pago_verificado", label: "Pago Verificado", color: "bg-green-500" },
-  { value: "convertido_a_pedido", label: "Convertido", color: "bg-emerald-600" },
-  { value: "perdido", label: "Perdido", color: "bg-red-500" },
+  { value: "conversacion_iniciada", label: "🔥 En Caliente", color: "bg-orange-100 text-orange-700 border-orange-200" },
+  { value: "consulta_producto", label: "💬 Consultando", color: "bg-blue-100 text-blue-700 border-blue-200" },
+  { value: "cotizacion_enviada", label: "📋 Cotizado", color: "bg-purple-100 text-purple-700 border-purple-200" },
+  { value: "en_proceso_de_pago", label: "💳 Esperando Pago", color: "bg-yellow-100 text-yellow-700 border-yellow-200" },
+  { value: "pagado", label: "✅ Pagado", color: "bg-green-100 text-green-700 border-green-200" },
+  { value: "turno_pendiente", label: "📅 Turno Pendiente", color: "bg-cyan-100 text-cyan-700 border-cyan-200" },
+  { value: "turno_agendado", label: "🗓️ Turno Agendado", color: "bg-teal-100 text-teal-700 border-teal-200" },
+  { value: "abandonado", label: "❌ Abandonado", color: "bg-red-100 text-red-700 border-red-200" },
 ]
 
 export function LeadsKanban({ leads: initialLeads, users, currentUser }: LeadsKanbanProps) {
@@ -95,24 +96,24 @@ export function LeadsKanban({ leads: initialLeads, users, currentUser }: LeadsKa
 
   return (
     <div className="flex gap-6">
-      <div className="flex-1">
-        {/* Filters */}
-        <Card className="bg-slate-900 border-slate-800 p-4 mb-6">
-          <div className="flex gap-4">
-            <div className="flex-1 relative">
+      <div className="flex-1 min-w-0">
+        {/* Filters - FIXED: Fondo blanco y estático */}
+        <Card className="bg-white border-slate-200 p-4 mb-6">
+          <div className="flex gap-4 flex-wrap">
+            <div className="flex-1 min-w-[300px] relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <Input
                 placeholder="Buscar por nombre, teléfono u origen..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 bg-slate-800 border-slate-700 text-white"
+                className="pl-10 bg-white border-slate-300"
               />
             </div>
 
             <select
               value={filterAsignado}
               onChange={(e) => setFilterAsignado(e.target.value)}
-              className="px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm"
+              className="px-4 py-2 bg-white border border-slate-300 rounded-lg text-slate-900 text-sm min-w-[200px]"
             >
               <option value="all">Todos los asignados</option>
               {users.map((user) => (
@@ -123,7 +124,7 @@ export function LeadsKanban({ leads: initialLeads, users, currentUser }: LeadsKa
             </select>
           </div>
 
-          <div className="mt-4 text-sm text-slate-400">
+          <div className="mt-4 text-sm text-slate-600">
             Mostrando {filteredLeads.length} de {leads.length} leads
           </div>
         </Card>
@@ -137,10 +138,9 @@ export function LeadsKanban({ leads: initialLeads, users, currentUser }: LeadsKa
               return (
                 <div key={estado.value} className="w-80 flex-shrink-0">
                   <div className="mb-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className={`w-3 h-3 rounded-full ${estado.color}`} />
-                      <h3 className="font-semibold text-white">{estado.label}</h3>
-                      <Badge variant="secondary" className="ml-auto bg-slate-800 text-slate-300">
+                    <div className={`flex items-center gap-2 mb-2 px-3 py-2 rounded-lg border ${estado.color}`}>
+                      <h3 className="font-semibold">{estado.label}</h3>
+                      <Badge variant="secondary" className="ml-auto">
                         {leadsInEstado.length}
                       </Badge>
                     </div>
@@ -148,8 +148,8 @@ export function LeadsKanban({ leads: initialLeads, users, currentUser }: LeadsKa
 
                   <div className="space-y-3">
                     {leadsInEstado.length === 0 ? (
-                      <Card className="bg-slate-900/50 border-slate-800 border-dashed p-4">
-                        <p className="text-center text-slate-500 text-sm">Sin leads</p>
+                      <Card className="bg-slate-50 border-slate-200 border-dashed p-4">
+                        <p className="text-center text-slate-400 text-sm">Sin leads</p>
                       </Card>
                     ) : (
                       leadsInEstado.map((lead) => (

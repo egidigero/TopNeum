@@ -46,10 +46,10 @@ export function LoginForm() {
   }
 
   return (
-    <Card className="border-slate-700 bg-slate-800/50 backdrop-blur">
+    <Card className="border-slate-200 bg-white shadow-lg">
       <CardHeader>
-        <CardTitle className="text-white">Iniciar Sesión</CardTitle>
-        <CardDescription className="text-slate-400">Ingresa tus credenciales para acceder</CardDescription>
+        <CardTitle className="text-slate-900">Iniciar Sesión</CardTitle>
+        <CardDescription className="text-slate-600">Ingresa tus credenciales para acceder</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -60,7 +60,7 @@ export function LoginForm() {
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="email" className="text-slate-200">
+            <Label htmlFor="email" className="text-slate-700">
               Email
             </Label>
             <Input
@@ -69,13 +69,13 @@ export function LoginForm() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="bg-slate-900/50 border-slate-600 text-white"
+              className="bg-white border-slate-300 text-slate-900"
               placeholder="admin@neumaticos.com"
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="password" className="text-slate-200">
+            <Label htmlFor="password" className="text-slate-700">
               Contraseña
             </Label>
             <Input
@@ -84,7 +84,7 @@ export function LoginForm() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="bg-slate-900/50 border-slate-600 text-white"
+              className="bg-white border-slate-300 text-slate-900"
               placeholder="••••••••"
             />
           </div>
@@ -93,7 +93,7 @@ export function LoginForm() {
             {loading ? "Iniciando sesión..." : "Iniciar Sesión"}
           </Button>
 
-          <div className="text-sm text-slate-400 text-center mt-4">
+          <div className="text-sm text-slate-600 text-center mt-4">
             <p>Usuarios de prueba:</p>
             <p className="text-xs mt-1">admin@neumaticos.com / admin123</p>
           </div>

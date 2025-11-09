@@ -4,7 +4,7 @@ import type React from "react"
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { LayoutDashboard, Package, DollarSign, MessageSquare, ShoppingCart, Receipt, LogOut } from "lucide-react"
+import { LayoutDashboard, Package, MessageSquare, ShoppingCart, Calendar, LogOut } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import type { User, UserRole } from "@/lib/auth"
@@ -32,10 +32,9 @@ const navItems: NavItem[] = [
     icon: Package,
   },
   {
-    title: "Tarifas",
-    href: "/tarifas",
-    icon: DollarSign,
-    roles: ["admin"],
+    title: "Turnos",
+    href: "/dashboard/turnos",
+    icon: Calendar,
   },
   {
     title: "Clientes WhatsApp",
@@ -46,12 +45,6 @@ const navItems: NavItem[] = [
     title: "Pedidos",
     href: "/pedidos",
     icon: ShoppingCart,
-  },
-  {
-    title: "Gastos",
-    href: "/gastos",
-    icon: Receipt,
-    roles: ["admin", "finanzas"],
   },
 ]
 
@@ -69,10 +62,10 @@ export function AppSidebar({ user }: AppSidebarProps) {
   }
 
   return (
-    <div className="flex flex-col h-full bg-slate-900 border-r border-slate-800">
-      <div className="p-6 border-b border-slate-800">
-        <h2 className="text-xl font-bold text-white">Sistema Neumáticos</h2>
-        <p className="text-sm text-slate-400 mt-1">{user.nombre}</p>
+    <div className="flex flex-col h-full bg-white border-r border-slate-200">
+      <div className="p-6 border-b border-slate-200">
+        <h2 className="text-xl font-bold text-slate-900">TopNeum</h2>
+        <p className="text-sm text-slate-600 mt-1">{user.nombre}</p>
         <p className="text-xs text-slate-500 capitalize">{user.role}</p>
       </div>
 
@@ -87,7 +80,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
               href={item.href}
               className={cn(
                 "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
-                isActive ? "bg-blue-600 text-white" : "text-slate-400 hover:text-white hover:bg-slate-800",
+                isActive ? "bg-blue-600 text-white" : "text-slate-700 hover:text-slate-900 hover:bg-slate-100",
               )}
             >
               <Icon className="w-5 h-5" />
@@ -97,11 +90,11 @@ export function AppSidebar({ user }: AppSidebarProps) {
         })}
       </nav>
 
-      <div className="p-4 border-t border-slate-800">
+      <div className="p-4 border-t border-slate-200">
         <Button
           onClick={handleLogout}
           variant="ghost"
-          className="w-full justify-start text-slate-400 hover:text-white hover:bg-slate-800"
+          className="w-full justify-start text-slate-700 hover:text-slate-900 hover:bg-slate-100"
         >
           <LogOut className="w-5 h-5 mr-3" />
           Cerrar Sesión
