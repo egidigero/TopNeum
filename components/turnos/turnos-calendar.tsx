@@ -12,13 +12,17 @@ interface Turno {
   id: string
   nombre_cliente: string
   telefono: string
+  email?: string
   tipo: "colocacion" | "retiro"
   fecha: string
   hora_inicio: string
   hora_fin: string
   estado: string
   marca_vehiculo?: string
+  modelo_vehiculo?: string
   patente?: string
+  cantidad_neumaticos?: number
+  observaciones?: string
   origen: string
   created_at: string
 }

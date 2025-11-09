@@ -22,15 +22,12 @@ export default async function LeadsPage() {
       l.created_at,
       l.updated_at,
       l.origen,
-      l.ultimo_contacto_at,
-      l.mensaje_inicial,
-      l.notas,
       u.nombre as asignado_nombre,
       -- Datos adicionales
       (SELECT medida_neumatico FROM lead_consultas WHERE lead_id = l.id ORDER BY created_at DESC LIMIT 1) as ultima_medida,
       (SELECT COUNT(*) FROM lead_consultas WHERE lead_id = l.id) as total_consultas,
       (SELECT COUNT(*) FROM lead_pedidos WHERE lead_id = l.id) as total_pedidos,
-      (SELECT COUNT(*) FROM pagos WHERE lead_id = l.id AND estado = 'confirmado') as pagos_count
+      (SELECT COUNT(*) FROM lead_pedidos WHERE lead_id = l.id AND estado_pago IN ('pagado', 'sena_recibida')) as pagos_count
     FROM leads l
     LEFT JOIN users u ON l.asignado_a = u.id
     WHERE l.estado NOT IN ('pedido_finalizado', 'abandonado')
@@ -53,10 +50,10 @@ export default async function LeadsPage() {
     ultima_interaccion: l.ultima_interaccion || null,
     created_at: String(l.created_at),
     origen: String(l.origen || 'whatsapp'),
-    ultimo_contacto_at: l.ultimo_contacto_at || null,
+    ultimo_contacto_at: l.ultima_interaccion || null, // Usar ultima_interaccion en lugar de ultimo_contacto_at
     pagos_count: Number(l.pagos_count || 0),
-    mensaje_inicial: String(l.mensaje_inicial || ''),
-    notas: l.notas || null,
+    mensaje_inicial: '', // No existe en nueva tabla
+    notas: null, // No existe en nueva tabla
   }))
 
   // Fetch users for assignment
