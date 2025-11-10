@@ -8,6 +8,37 @@ export async function POST(request: NextRequest) {
     
     let { medida_neumatico, marca, region } = body
 
+    // Normalizar medida (remover espacios antes de R)
+    if (medida_neumatico) {
+      medida_neumatico = String(medida_neumatico)
+        .trim()
+        .replace(/\s+R/gi, 'R') // "185/60 R15" -> "185/60R15"
+        .replace(/\s+/g, '') // Remover otros espacios
+        .toUpperCase()
+    }
+
+    // Normalizar marca
+    if (marca) {
+      marca = String(marca).trim()
+      
+      // Corregir typos comunes
+      const typoMap: Record<string, string> = {
+        'HANGKOOK': 'Hankook',
+        'HANKOOK': 'Hankook',
+        'MICHELIN': 'Michelin',
+        'BRIDGESTONE': 'Bridgestone',
+        'PIRELLI': 'Pirelli',
+        'GOODYEAR': 'Goodyear',
+        'FIRESTONE': 'Firestone',
+        'FATE': 'Fate'
+      }
+      
+      const marcaUpper = marca.toUpperCase()
+      if (typoMap[marcaUpper]) {
+        marca = typoMap[marcaUpper]
+      }
+    }
+
     // Validar parámetros requeridos
     if (!medida_neumatico || !region) {
       return NextResponse.json(
@@ -53,6 +84,7 @@ export async function POST(request: NextRequest) {
         FROM products
         WHERE medida = ${medida_neumatico}
           AND UPPER(marca) = UPPER(${marca})
+          AND tiene_stock = true
         ORDER BY cuota_3 ASC
         LIMIT 20
       `
@@ -76,10 +108,17 @@ export async function POST(request: NextRequest) {
           stock
         FROM products
         WHERE medida = ${medida_neumatico}
+          AND tiene_stock = true
         ORDER BY cuota_3 ASC
         LIMIT 20
       `
     }
+
+    // Filtrar productos con stock (excluir stock 0 o vacío)
+    productos = productos.filter(p => {
+      const stock = String(p.stock || '').trim().toUpperCase()
+      return stock !== '' && stock !== '0' && stock !== 'NULL'
+    })
 
     // Si no hay productos, devolver mensaje
     if (productos.length === 0) {
