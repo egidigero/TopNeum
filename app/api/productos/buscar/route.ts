@@ -43,7 +43,6 @@ export async function POST(request: NextRequest) {
           diseno,
           medida,
           descripcion_larga,
-          precio_lista_fact,
           cuota_3,
           cuota_6,
           cuota_12,
@@ -54,7 +53,7 @@ export async function POST(request: NextRequest) {
         FROM products
         WHERE medida = ${medida_neumatico}
           AND UPPER(marca) = UPPER(${marca})
-        ORDER BY precio_lista_fact ASC
+        ORDER BY cuota_3 ASC
         LIMIT 20
       `
     } else {
@@ -68,7 +67,6 @@ export async function POST(request: NextRequest) {
           diseno,
           medida,
           descripcion_larga,
-          precio_lista_fact,
           cuota_3,
           cuota_6,
           cuota_12,
@@ -78,7 +76,7 @@ export async function POST(request: NextRequest) {
           stock
         FROM products
         WHERE medida = ${medida_neumatico}
-        ORDER BY precio_lista_fact ASC
+        ORDER BY cuota_3 ASC
         LIMIT 20
       `
     }
@@ -98,6 +96,17 @@ export async function POST(request: NextRequest) {
         ? Number(p.efectivo_bsas_sin_iva) 
         : Number(p.efectivo_int_sin_iva)
 
+      // Convertir stock (puede ser número, "OK", o vacío)
+      let stockNumerico = 0
+      if (p.stock) {
+        const stockStr = String(p.stock).trim().toUpperCase()
+        if (stockStr === 'OK') {
+          stockNumerico = 999 // Consideramos OK como disponible
+        } else if (!isNaN(Number(stockStr))) {
+          stockNumerico = Number(stockStr)
+        }
+      }
+
       return {
         id: String(p.id),
         marca: String(p.marca),
@@ -110,7 +119,7 @@ export async function POST(request: NextRequest) {
         precio_3_cuotas: Math.round(Number(p.cuota_3)),
         precio_6_cuotas: Math.round(Number(p.cuota_6)),
         precio_12_cuotas: Math.round(Number(p.cuota_12)),
-        stock: Number(p.stock) || 0
+        stock: stockNumerico
       }
     })
 
