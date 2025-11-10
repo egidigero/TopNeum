@@ -4,7 +4,7 @@ import { sql } from "@/lib/db"
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { medida_neumatico, marca, region } = body
+    let { medida_neumatico, marca, region } = body
 
     // Validar parámetros requeridos
     if (!medida_neumatico || !region) {
@@ -14,10 +14,13 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Normalizar región (trim + uppercase)
+    region = String(region).trim().toUpperCase()
+    
     // Validar región
     if (region !== "CABA" && region !== "INTERIOR") {
       return NextResponse.json(
-        { error: "region debe ser CABA o INTERIOR" },
+        { error: `region debe ser CABA o INTERIOR (recibido: "${region}")` },
         { status: 400 }
       )
     }
