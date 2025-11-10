@@ -4,6 +4,8 @@ import { sql } from "@/lib/db"
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
+    console.log("[buscar_productos] Body recibido:", JSON.stringify(body))
+    
     let { medida_neumatico, marca, region } = body
 
     // Validar parámetros requeridos
@@ -24,6 +26,8 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
+
+    console.log("[buscar_productos] Buscando:", { medida_neumatico, marca, region })
 
     // Buscar productos en la tabla products
     let productos: any[]
@@ -140,11 +144,13 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error: any) {
-    console.error("[buscar_productos] Error:", error)
+    console.error("[buscar_productos] Error completo:", error)
+    console.error("[buscar_productos] Error stack:", error?.stack)
     return NextResponse.json(
       { 
         error: "Error al buscar productos",
-        detalle: error?.message || String(error)
+        detalle: error?.message || String(error),
+        tipo: error?.constructor?.name
       },
       { status: 500 }
     )
