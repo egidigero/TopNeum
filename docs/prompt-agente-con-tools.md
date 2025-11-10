@@ -315,7 +315,7 @@ RESPUESTA AL CLIENTE:
 ⚠️ *MUY IMPORTANTE:* Guardá este código, lo necesitás para registrar tu envío.
 
 � Completá tus datos de envío acá:
-👉 https://topneum.com/turnos
+👉 https://top-neum-h5x5.vercel.app/turnos
 
 Cuando entres a la web:
 1️⃣ Ingresá tu código: *[CÓDIGO]*
@@ -397,7 +397,7 @@ RESPUESTA AL CLIENTE:
 ⚠️ *MUY IMPORTANTE:* Guardá este código, lo necesitás para agendar tu turno.
 
 🗓️ Agendá tu turno acá:
-👉 https://topneum.com/turnos
+👉 https://top-neum-h5x5.vercel.app/turnos
 
 📍 Dirección: VW Maynar AG - Villa Devoto
 ⏰ Horarios de retiro:
@@ -447,7 +447,7 @@ RESPUESTA AL CLIENTE:
 ⚠️ *MUY IMPORTANTE:* Guardá este código, lo necesitás para agendar tu turno.
 
 🗓️ Agendá tu turno acá:
-👉 https://topneum.com/turnos
+👉 https://top-neum-h5x5.vercel.app/turnos
 
 📍 Dirección: VW Maynar AG - Villa Devoto
 ⏰ Horarios de colocación:
@@ -745,7 +745,7 @@ Cada marca tiene sus propios términos de garantía que te detallamos al confirm
 - **Nota:** En este estado, el cliente debe ir a agendar en la web
 
 ### `turno_agendado`
-- **🤖 CAMBIO AUTOMÁTICO** - El cliente agendó en https://topneum.com/turnos
+- **🤖 CAMBIO AUTOMÁTICO** - El cliente agendó en https://top-neum-h5x5.vercel.app/turnos
 - El sistema detecta automáticamente la reserva y vincula con el lead por teléfono
 - El trigger actualiza el estado de `turno_pendiente` → `turno_agendado`
 - **NO necesitas hacer nada** - Todo es automático cuando el cliente agenda
