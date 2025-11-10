@@ -39,8 +39,8 @@ export async function POST(request: NextRequest) {
           id,
           sku as codigo,
           marca,
-          linea as modelo,
-          diseno_linea as diseno,
+          familia,
+          diseno,
           medida,
           descripcion_larga,
           precio_lista_fact,
@@ -64,8 +64,8 @@ export async function POST(request: NextRequest) {
           id,
           sku as codigo,
           marca,
-          linea as modelo,
-          diseno_linea as diseno,
+          familia,
+          diseno,
           medida,
           descripcion_larga,
           precio_lista_fact,
@@ -101,9 +101,10 @@ export async function POST(request: NextRequest) {
       return {
         id: String(p.id),
         marca: String(p.marca),
-        modelo: String(p.modelo || p.diseno || ''),
+        familia: String(p.familia || ''),
+        diseno: String(p.diseno || ''),
         medida: String(p.medida),
-        descripcion: String(p.descripcion_larga || `${p.marca} ${p.modelo || p.diseno} ${p.medida}`),
+        descripcion: String(p.descripcion_larga || `${p.marca} ${p.familia} ${p.medida}`),
         precio_contado_caba: Math.round(Number(p.efectivo_bsas_sin_iva)),
         precio_contado_interior: Math.round(Number(p.efectivo_int_sin_iva)),
         precio_3_cuotas: Math.round(Number(p.cuota_3)),
@@ -124,7 +125,7 @@ export async function POST(request: NextRequest) {
       const total12 = p.precio_12_cuotas * 4
 
       mensajeFormateado += `━━━━━━━━━━━━━━━━━━━━━━\n`
-      mensajeFormateado += `🏆 OPCIÓN ${i + 1} - ${p.marca} ${p.modelo}\n`
+      mensajeFormateado += `🏆 OPCIÓN ${i + 1} - ${p.marca} ${p.familia}${p.diseno ? ' ' + p.diseno : ''}\n`
       mensajeFormateado += `━━━━━━━━━━━━━━━━━━━━━━\n`
       mensajeFormateado += `📦 Stock: ${p.stock > 0 ? 'Disponible' : 'Consultar'}\n`
       mensajeFormateado += `💳 3 cuotas: $${p.precio_3_cuotas.toLocaleString('es-AR')} (Total: $${total3.toLocaleString('es-AR')})\n`
