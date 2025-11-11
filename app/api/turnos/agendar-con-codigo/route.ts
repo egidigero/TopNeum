@@ -8,11 +8,19 @@ import { sql } from "@/lib/db"
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { codigo, fecha, hora_inicio, hora_fin, tipo } = body
+    const { codigo, fecha, hora_inicio, hora_fin, tipo, datos_envio } = body
 
-    if (!codigo || !fecha || !hora_inicio || !hora_fin || !tipo) {
+    // Para tipo "envio", fecha/hora no son requeridas
+    if (!codigo || !tipo) {
       return NextResponse.json({ 
         error: 'Faltan datos requeridos' 
+      }, { status: 400 })
+    }
+
+    // Si no es envio, validar fecha y hora
+    if (tipo !== "envio" && (!fecha || !hora_inicio || !hora_fin)) {
+      return NextResponse.json({ 
+        error: 'Faltan datos de fecha y horario' 
       }, { status: 400 })
     }
 
@@ -62,39 +70,42 @@ export async function POST(request: NextRequest) {
 
     const pedido = pedidoResult.length > 0 ? pedidoResult[0] : {}
 
-    // 🆕 Validar que el cliente no tenga otro turno activo
-    const turnoExistenteResult = await sql`
-      SELECT id, fecha, hora_inicio, estado_turno 
-      FROM turnos
-      WHERE lead_id = ${lead.id}
-      AND estado_turno IN ('pendiente', 'confirmado')
-      LIMIT 1
-    `
+    // 🆕 Validar que el cliente no tenga otro turno activo (solo si no es envío)
+    if (tipo !== "envio") {
+      const turnoExistenteResult = await sql`
+        SELECT id, fecha, hora_inicio, estado_turno 
+        FROM turnos
+        WHERE lead_id = ${lead.id}
+        AND estado_turno IN ('pendiente', 'confirmado')
+        AND tipo IN ('colocacion', 'retiro')
+        LIMIT 1
+      `
 
-    if (turnoExistenteResult.length > 0) {
-      const turnoExistente = turnoExistenteResult[0]
-      return NextResponse.json({ 
-        error: `Ya tenés un turno agendado para el ${new Date(turnoExistente.fecha + 'T00:00:00').toLocaleDateString('es-AR')} a las ${turnoExistente.hora_inicio.substring(0, 5)}. Completá o cancelá ese turno antes de agendar uno nuevo.`,
-        turno_existente: turnoExistente
-      }, { status: 409 })
+      if (turnoExistenteResult.length > 0) {
+        const turnoExistente = turnoExistenteResult[0]
+        return NextResponse.json({ 
+          error: `Ya tenés un turno agendado para el ${new Date(turnoExistente.fecha + 'T00:00:00').toLocaleDateString('es-AR')} a las ${turnoExistente.hora_inicio.substring(0, 5)}. Completá o cancelá ese turno antes de agendar uno nuevo.`,
+          turno_existente: turnoExistente
+        }, { status: 409 })
+      }
+
+      // Verificar disponibilidad del slot
+      const conflictosResult = await sql`
+        SELECT id FROM turnos
+        WHERE fecha = ${fecha}
+        AND hora_inicio = ${hora_inicio}
+        AND estado != 'cancelado'
+        LIMIT 1
+      `
+
+      if (conflictosResult.length > 0) {
+        return NextResponse.json({ 
+          error: 'Este horario ya no está disponible. Por favor elegí otro.' 
+        }, { status: 409 })
+      }
     }
 
-    // Verificar disponibilidad del slot
-    const conflictosResult = await sql`
-      SELECT id FROM turnos
-      WHERE fecha = ${fecha}
-      AND hora_inicio = ${hora_inicio}
-      AND estado != 'cancelado'
-      LIMIT 1
-    `
-
-    if (conflictosResult.length > 0) {
-      return NextResponse.json({ 
-        error: 'Este horario ya no está disponible. Por favor elegí otro.' 
-      }, { status: 409 })
-    }
-
-    // Crear turno
+    // Crear turno (envío o colocación/retiro)
     const turnoResult = await sql`
       INSERT INTO turnos (
         lead_id,
@@ -109,7 +120,9 @@ export async function POST(request: NextRequest) {
         modelo_vehiculo,
         cantidad_neumaticos,
         estado,
-        origen
+        origen,
+        datos_envio,
+        estado_turno
       )
       VALUES (
         ${lead.id},
@@ -117,14 +130,16 @@ export async function POST(request: NextRequest) {
         ${lead.telefono_whatsapp},
         ${lead.email || null},
         ${tipo},
-        ${fecha},
-        ${hora_inicio},
-        ${hora_fin},
+        ${tipo === "envio" ? null : fecha},
+        ${tipo === "envio" ? null : hora_inicio},
+        ${tipo === "envio" ? null : hora_fin},
         ${consulta.tipo_vehiculo || null},
         ${consulta.tipo_vehiculo || null},
         ${pedido.cantidad_total || 4},
-        'confirmado',
-        'web_cliente'
+        ${tipo === "envio" ? 'pendiente' : 'confirmado'},
+        'web_cliente',
+        ${tipo === "envio" ? JSON.stringify(datos_envio) : null},
+        ${tipo === "envio" ? 'pendiente' : 'confirmado'}
       )
       RETURNING *
     `
@@ -134,7 +149,7 @@ export async function POST(request: NextRequest) {
     // Actualizar estado del lead
     await sql`
       UPDATE leads
-      SET estado = 'turno_agendado'
+      SET estado = ${tipo === "envio" ? 'pedido_confirmado' : 'turno_agendado'}
       WHERE id = ${lead.id}
     `
 
@@ -147,7 +162,7 @@ export async function POST(request: NextRequest) {
         hora_fin: turno.hora_fin,
         tipo: turno.tipo
       },
-      message: '¡Turno agendado exitosamente!'
+      message: tipo === "envio" ? '¡Envío coordinado exitosamente!' : '¡Turno agendado exitosamente!'
     })
 
   } catch (error: any) {

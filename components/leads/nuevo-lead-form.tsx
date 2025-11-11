@@ -8,21 +8,27 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { ArrowLeft } from "lucide-react"
-import Link from "next/link"
+import { User, Phone, MessageSquare, MapPin, Tag, AlertCircle, Sparkles } from "lucide-react"
 
-export function NuevoLeadForm() {
+interface NuevoLeadFormProps {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  onSuccess?: () => void
+}
+
+export function NuevoLeadForm({ open, onOpenChange, onSuccess }: NuevoLeadFormProps) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
   const [formData, setFormData] = useState({
-    nombre: "",
-    telefono: "",
-    canal: "whatsapp",
-    mensaje_inicial: "",
-    origen: "",
+    nombre_cliente: "",
+    telefono_whatsapp: "",
+    region: "CABA",
+    origen: "manual",
+    whatsapp_label: "",
+    observaciones: "",
   })
 
   async function handleSubmit(e: React.FormEvent) {
@@ -34,7 +40,10 @@ export function NuevoLeadForm() {
       const res = await fetch("/api/leads", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          estado: "nuevo",
+        }),
       })
 
       const data = await res.json()
@@ -44,7 +53,18 @@ export function NuevoLeadForm() {
         return
       }
 
-      router.push("/leads")
+      // Reset form
+      setFormData({
+        nombre_cliente: "",
+        telefono_whatsapp: "",
+        region: "CABA",
+        origen: "manual",
+        whatsapp_label: "",
+        observaciones: "",
+      })
+
+      onOpenChange(false)
+      if (onSuccess) onSuccess()
       router.refresh()
     } catch (err) {
       setError("Error de conexión")
@@ -54,110 +74,163 @@ export function NuevoLeadForm() {
   }
 
   return (
-    <div className="max-w-2xl">
-      <Link href="/leads">
-        <Button variant="ghost" className="mb-4 text-slate-400 hover:text-white">
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Volver a leads
-        </Button>
-      </Link>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="bg-white border-2 border-blue-100 max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent flex items-center gap-2">
+            <Sparkles className="w-6 h-6 text-blue-600" />
+            Nuevo Lead
+          </DialogTitle>
+        </DialogHeader>
 
-      <Card className="bg-slate-900 border-slate-800">
-        <CardHeader>
-          <CardTitle className="text-white">Información del Lead</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {error && (
-              <Alert variant="destructive">
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
+        <form onSubmit={handleSubmit} className="space-y-5 mt-4">
+          {error && (
+            <Alert variant="destructive" className="bg-red-50 border-red-200">
+              <AlertCircle className="w-4 h-4" />
+              <AlertDescription className="text-red-700">{error}</AlertDescription>
+            </Alert>
+          )}
 
+          {/* Nombre */}
+          <div className="space-y-2">
+            <Label htmlFor="nombre_cliente" className="text-slate-700 flex items-center gap-2 font-medium">
+              <User className="w-4 h-4 text-blue-600" />
+              Nombre del Cliente *
+            </Label>
+            <Input
+              id="nombre_cliente"
+              value={formData.nombre_cliente}
+              onChange={(e) => setFormData({ ...formData, nombre_cliente: e.target.value })}
+              required
+              className="bg-blue-50 border-2 border-blue-200 text-slate-800 h-12 focus:border-blue-500 transition-colors"
+              placeholder="Juan Pérez"
+            />
+          </div>
+
+          {/* Teléfono */}
+          <div className="space-y-2">
+            <Label htmlFor="telefono_whatsapp" className="text-slate-700 flex items-center gap-2 font-medium">
+              <Phone className="w-4 h-4 text-green-600" />
+              Teléfono WhatsApp *
+            </Label>
+            <Input
+              id="telefono_whatsapp"
+              type="tel"
+              value={formData.telefono_whatsapp}
+              onChange={(e) => setFormData({ ...formData, telefono_whatsapp: e.target.value })}
+              required
+              className="bg-blue-50 border-2 border-blue-200 text-slate-800 h-12 focus:border-blue-500 transition-colors"
+              placeholder="+54 9 11 1234-5678"
+            />
+            <p className="text-xs text-slate-500">Incluir código de país y área</p>
+          </div>
+
+          {/* Región */}
+          <div className="space-y-2">
+            <Label htmlFor="region" className="text-slate-700 flex items-center gap-2 font-medium">
+              <MapPin className="w-4 h-4 text-purple-600" />
+              Región *
+            </Label>
+            <select
+              id="region"
+              value={formData.region}
+              onChange={(e) => setFormData({ ...formData, region: e.target.value })}
+              className="w-full px-4 py-3 bg-blue-50 border-2 border-blue-200 rounded-lg text-slate-800 h-12 focus:border-blue-500 transition-colors"
+              required
+            >
+              <option value="CABA">CABA</option>
+              <option value="GBA Norte">GBA Norte</option>
+              <option value="GBA Sur">GBA Sur</option>
+              <option value="GBA Oeste">GBA Oeste</option>
+              <option value="Interior">Interior</option>
+            </select>
+          </div>
+
+          {/* Origen y WhatsApp Label en 2 columnas */}
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="nombre" className="text-slate-200">
-                Nombre *
-              </Label>
-              <Input
-                id="nombre"
-                value={formData.nombre}
-                onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
-                required
-                className="bg-slate-800 border-slate-700 text-white"
-                placeholder="Juan Pérez"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="telefono" className="text-slate-200">
-                Teléfono *
-              </Label>
-              <Input
-                id="telefono"
-                value={formData.telefono}
-                onChange={(e) => setFormData({ ...formData, telefono: e.target.value })}
-                required
-                className="bg-slate-800 border-slate-700 text-white"
-                placeholder="+5491123456789"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="canal" className="text-slate-200">
-                Canal *
+              <Label htmlFor="origen" className="text-slate-700 flex items-center gap-2 font-medium">
+                <Tag className="w-4 h-4 text-orange-600" />
+                Origen
               </Label>
               <select
-                id="canal"
-                value={formData.canal}
-                onChange={(e) => setFormData({ ...formData, canal: e.target.value })}
-                className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white"
+                id="origen"
+                value={formData.origen}
+                onChange={(e) => setFormData({ ...formData, origen: e.target.value })}
+                className="w-full px-4 py-3 bg-blue-50 border-2 border-blue-200 rounded-lg text-slate-800 h-12 focus:border-blue-500 transition-colors"
               >
+                <option value="manual">Manual</option>
                 <option value="whatsapp">WhatsApp</option>
                 <option value="instagram">Instagram</option>
+                <option value="facebook">Facebook</option>
+                <option value="web">Sitio Web</option>
+                <option value="referido">Referido</option>
                 <option value="otro">Otro</option>
               </select>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="origen" className="text-slate-200">
-                Origen
+              <Label htmlFor="whatsapp_label" className="text-slate-700 flex items-center gap-2 font-medium">
+                <MessageSquare className="w-4 h-4 text-cyan-600" />
+                Etiqueta WhatsApp
               </Label>
               <Input
-                id="origen"
-                value={formData.origen}
-                onChange={(e) => setFormData({ ...formData, origen: e.target.value })}
-                className="bg-slate-800 border-slate-700 text-white"
-                placeholder="Instagram Ad, Referido, etc."
+                id="whatsapp_label"
+                value={formData.whatsapp_label}
+                onChange={(e) => setFormData({ ...formData, whatsapp_label: e.target.value })}
+                className="bg-blue-50 border-2 border-blue-200 text-slate-800 h-12 focus:border-blue-500 transition-colors"
+                placeholder="Cliente nuevo"
               />
             </div>
+          </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="mensaje_inicial" className="text-slate-200">
-                Mensaje Inicial
-              </Label>
-              <Textarea
-                id="mensaje_inicial"
-                value={formData.mensaje_inicial}
-                onChange={(e) => setFormData({ ...formData, mensaje_inicial: e.target.value })}
-                className="bg-slate-800 border-slate-700 text-white"
-                placeholder="Primer mensaje del cliente..."
-                rows={4}
-              />
-            </div>
+          {/* Observaciones */}
+          <div className="space-y-2">
+            <Label htmlFor="observaciones" className="text-slate-700 flex items-center gap-2 font-medium">
+              <MessageSquare className="w-4 h-4 text-slate-600" />
+              Observaciones
+            </Label>
+            <Textarea
+              id="observaciones"
+              value={formData.observaciones}
+              onChange={(e) => setFormData({ ...formData, observaciones: e.target.value })}
+              className="bg-blue-50 border-2 border-blue-200 text-slate-800 resize-none focus:border-blue-500 transition-colors"
+              placeholder="Información adicional sobre el cliente..."
+              rows={4}
+            />
+          </div>
 
-            <div className="flex gap-4">
-              <Button type="submit" className="bg-blue-600 hover:bg-blue-700" disabled={loading}>
-                {loading ? "Creando..." : "Crear Lead"}
-              </Button>
-              <Link href="/leads">
-                <Button type="button" variant="outline" className="border-slate-700 text-slate-300 bg-transparent">
-                  Cancelar
-                </Button>
-              </Link>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
-    </div>
+          {/* Botones */}
+          <div className="flex gap-3 pt-4 border-t border-slate-200">
+            <Button
+              type="submit"
+              disabled={loading}
+              className="flex-1 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-bold h-12 text-base shadow-lg transition-all duration-200 disabled:opacity-50"
+            >
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Creando...
+                </span>
+              ) : (
+                <>
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  Crear Lead
+                </>
+              )}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              disabled={loading}
+              className="flex-1 border-2 border-slate-300 text-slate-700 hover:bg-slate-100 h-12 text-base"
+            >
+              Cancelar
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
   )
 }

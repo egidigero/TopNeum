@@ -20,12 +20,14 @@ type LeadEstado =
 
 interface Lead {
   id: string
-  nombre: string
-  telefono: string
+  nombre?: string
+  nombre_cliente?: string
+  telefono?: string
+  telefono_whatsapp?: string
   canal: string
   region: string
   estado: LeadEstado
-  whatsapp_label: string
+  whatsapp_label?: string | null
   // Datos recolectados
   medida_neumatico: string | null
   marca_preferida: string | null
@@ -46,6 +48,16 @@ interface Lead {
   ultimo_contacto_at: string | null
   mensaje_inicial: string
   notas: string | null
+  // Campos nuevos de producto
+  producto_descripcion?: string | null
+  forma_pago_detalle?: string | null
+  cantidad?: number | null
+  precio_final?: number | null
+  // Campos de turno
+  tiene_turno?: number | boolean
+  turno_fecha?: string | null
+  turno_hora?: string | null
+  turno_estado?: string | null
 }
 
 interface LeadsKanbanProps {
@@ -71,10 +83,13 @@ export function LeadsKanban({ leads: initialLeads, users, currentUser }: LeadsKa
   const [filterAsignado, setFilterAsignado] = useState<string>("all")
 
   const filteredLeads = leads.filter((lead) => {
+    const nombre = lead.nombre_cliente || lead.nombre || ""
+    const telefono = lead.telefono_whatsapp || lead.telefono || ""
+    
     const matchesSearch =
-      lead.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      lead.telefono.includes(searchTerm) ||
-      lead.origen?.toLowerCase().includes(searchTerm.toLowerCase())
+      nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      telefono.includes(searchTerm) ||
+      (lead.origen?.toLowerCase() || "").includes(searchTerm.toLowerCase())
 
     const matchesAsignado = filterAsignado === "all" || lead.asignado_a === filterAsignado
 

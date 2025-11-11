@@ -71,7 +71,12 @@ export async function GET() {
     
     // 1. Actualizar constraint de estados
     try {
-      await sql`ALTER TABLE leads DROP CONSTRAINT IF EXISTS leads_estado_check`
+      // Eliminar constraint viejo completamente (puede tener diferentes nombres)
+      await sql`ALTER TABLE leads DROP CONSTRAINT IF EXISTS leads_estado_check CASCADE`
+      await sql`ALTER TABLE leads DROP CONSTRAINT IF EXISTS leads_check CASCADE`
+      await sql`ALTER TABLE leads DROP CONSTRAINT IF EXISTS check_estado CASCADE`
+      
+      // Crear el nuevo constraint
       await sql`
         ALTER TABLE leads ADD CONSTRAINT leads_estado_check 
         CHECK (estado IN ('nuevo', 'en_conversacion', 'cotizado', 'esperando_pago', 'pago_informado', 'pedido_confirmado', 'perdido'))

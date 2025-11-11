@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Search, Eye, Phone, Calendar } from "lucide-react"
-import Link from "next/link"
+import { PedidoDetailPanel } from "./pedido-detail-panel"
 
 interface Pedido {
   id: string
@@ -82,6 +82,7 @@ export function PedidosTable({ pedidos }: PedidosTableProps) {
   const [searchTerm, setSearchTerm] = useState("")
   const [estadoFilter, setEstadoFilter] = useState<string>("all")
   const [tipoEntregaFilter, setTipoEntregaFilter] = useState<string>("all")
+  const [selectedPedido, setSelectedPedido] = useState<Pedido | null>(null)
 
   const filteredPedidos = useMemo(() => {
     return pedidos.filter((pedido) => {
@@ -268,14 +269,16 @@ export function PedidosTable({ pedidos }: PedidosTableProps) {
                     <TableCell className="text-right text-slate-900 font-medium">
                       {formatPrice(pedido.total)}
                     </TableCell>
-                    <TableCell className="text-slate-600 text-sm">{formatDate(pedido.fecha_pedido)}</TableCell>
                     <TableCell>
-                      <Link href={`/leads`}>
-                        <Button size="sm" variant="ghost" className="text-blue-600 hover:text-blue-700 hover:bg-blue-50">
-                          <Eye className="w-4 h-4 mr-1" />
-                          Ver Lead
-                        </Button>
-                      </Link>
+                      <Button 
+                        size="sm" 
+                        variant="ghost" 
+                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                        onClick={() => setSelectedPedido(pedido)}
+                      >
+                        <Eye className="w-4 h-4 mr-1" />
+                        Ver Detalle
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))
@@ -283,6 +286,17 @@ export function PedidosTable({ pedidos }: PedidosTableProps) {
             </TableBody>
           </Table>
         </div>
+
+        {selectedPedido && (
+          <PedidoDetailPanel
+            pedido={selectedPedido}
+            onClose={() => setSelectedPedido(null)}
+            onUpdate={() => {
+              // Refresh pedidos
+              window.location.reload()
+            }}
+          />
+        )}
       </Card>
     </div>
   )

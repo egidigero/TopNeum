@@ -14,11 +14,10 @@ export async function POST(request: NextRequest) {
     }
 
     const result = await sql`
-      INSERT INTO leads_whatsapp (
-        nombre, telefono, canal, mensaje_inicial, origen, estado
+      INSERT INTO leads (
+        nombre_cliente, telefono_whatsapp, origen, estado, region
       ) VALUES (
-        ${nombre}, ${telefono}, ${canal || "whatsapp"}, 
-        ${mensaje_inicial}, ${origen}, 'nuevo'
+        ${nombre}, ${telefono}, ${origen || 'whatsapp'}, 'nuevo', 'INTERIOR'
       )
       RETURNING *
     `

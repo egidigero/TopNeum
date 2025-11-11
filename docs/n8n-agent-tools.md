@@ -135,26 +135,55 @@ Actualizar el estado del lead en la base de datos y registrar el tracking de la 
     "nuevo_estado": {
       "type": "string",
       "enum": [
-        "conversacion_iniciada",
-        "consulta_producto",
-        "cotizacion_enviada",
-        "en_proceso_de_pago",
-        "pagado",
-        "turno_pendiente",
-        "turno_agendado",
-        "pedido_enviado",
-        "pedido_finalizado"
+        "nuevo",
+        "en_conversacion",
+        "cotizado",
+        "esperando_pago",
+        "pago_informado",
+        "pedido_confirmado",
+        "perdido"
       ],
-      "description": "Nuevo estado del lead según la etapa de la conversación"
+      "description": "Nuevo estado del lead según la etapa de la conversación. Estados: nuevo (recién creado), en_conversacion (charlando), cotizado (envió precios), esperando_pago (cliente debe pagar, tiene código), pago_informado (cliente dice que pagó), pedido_confirmado (pago verificado, va a Pedidos), perdido (descartado)"
     },
     "datos_adicionales": {
       "type": "object",
       "description": "Datos relevantes de esta etapa (medida consultada, productos elegidos, forma de pago, etc)"
+    },
+    "datos_cliente": {
+      "type": "object",
+      "description": "NUEVO: Datos personales del cliente que se pueden actualizar (email, dni, direccion, localidad, provincia, codigo_postal). Estos se guardan en la tabla leads y son editables desde el CRM",
+      "properties": {
+        "email": {"type": "string", "description": "Email del cliente"},
+        "dni": {"type": "string", "description": "DNI del cliente"},
+        "direccion": {"type": "string", "description": "Dirección (calle y número)"},
+        "localidad": {"type": "string", "description": "Ciudad/localidad"},
+        "provincia": {"type": "string", "description": "Provincia"},
+        "codigo_postal": {"type": "string", "description": "Código postal"}
+      }
     }
   },
   "required": ["telefono_whatsapp", "nuevo_estado"]
 }
 ```
+
+### Flujo de Estados (Actualizado)
+
+```
+nuevo → en_conversacion → cotizado → esperando_pago → pago_informado → pedido_confirmado
+                                                                              ↓
+                                                                          (Va a Pedidos)
+                                          ↓
+                                       perdido (en cualquier momento)
+```
+
+**Detalles de cada estado:**
+- **nuevo**: Lead recién creado, sin interacción real
+- **en_conversacion**: Cliente está consultando, conversación activa
+- **cotizado**: Ya se envió cotización con precios
+- **esperando_pago**: Cliente debe pagar (se genera código de confirmación automático)
+- **pago_informado**: Cliente informó que pagó (pendiente verificación del vendedor)
+- **pedido_confirmado**: Pago verificado, lead aparece en sección "Pedidos" del CRM
+- **perdido**: Lead descartado (no responde, no le interesa, etc)
 
 ### Ejemplos de uso por el agente
 
@@ -162,7 +191,7 @@ Actualizar el estado del lead en la base de datos y registrar el tracking de la 
 ```json
 {
   "telefono_whatsapp": "+54 9 11 1234 5678",
-  "nuevo_estado": "consulta_producto",
+  "nuevo_estado": "en_conversacion",
   "datos_adicionales": {
     "medida_neumatico": "205/55R16",
     "marca_preferida": null,
@@ -170,13 +199,13 @@ Actualizar el estado del lead en la base de datos y registrar el tracking de la 
   }
 }
 ```
-**⚠️ Si es la primera vez de este teléfono, el trigger crea el lead automáticamente.**
+**⚠️ Si es la primera vez de este teléfono, el trigger crea el lead automáticamente con estado "nuevo".**
 
 **Ejemplo 2: Se envió cotización**
 ```json
 {
   "telefono_whatsapp": "+54 9 11 1234 5678",
-  "nuevo_estado": "cotizacion_enviada",
+  "nuevo_estado": "cotizado",
   "datos_adicionales": {
     "medida_cotizada": "205/55R16",
     "cantidad_opciones": 5,
@@ -187,11 +216,11 @@ Actualizar el estado del lead en la base de datos y registrar el tracking de la 
 }
 ```
 
-**Ejemplo 3: Cliente eligió forma de pago**
+**Ejemplo 3: Cliente eligió forma de pago (NUEVO: se genera código automáticamente)**
 ```json
 {
   "telefono_whatsapp": "+54 9 11 1234 5678",
-  "nuevo_estado": "en_proceso_de_pago",
+  "nuevo_estado": "esperando_pago",
   "datos_adicionales": {
     "producto_elegido": {
       "marca": "HANKOOK",
@@ -207,6 +236,38 @@ Actualizar el estado del lead en la base de datos y registrar el tracking de la 
   }
 }
 ```
+**✨ Al pasar a "esperando_pago", se genera un `codigo_confirmacion` único (ej: "TOP123") que el cliente usará para agendar turno.**
+
+**Ejemplo 4: Cliente informó que pagó**
+```json
+{
+  "telefono_whatsapp": "+54 9 11 1234 5678",
+  "nuevo_estado": "pago_informado",
+  "datos_adicionales": {
+    "metodo_pago": "transferencia",
+    "fecha_informada": "2025-11-11",
+    "comprobante_enviado": true
+  }
+}
+```
+**🔔 El vendedor verá este lead en estado "pago_informado" y podrá confirmar el pago desde el CRM.**
+
+**Ejemplo 5: NUEVO - Recopilar datos del cliente**
+```json
+{
+  "telefono_whatsapp": "+54 9 11 1234 5678",
+  "nuevo_estado": "en_conversacion",
+  "datos_cliente": {
+    "email": "juan@example.com",
+    "dni": "12345678",
+    "direccion": "Av. Corrientes 1234",
+    "localidad": "Buenos Aires",
+    "provincia": "Buenos Aires",
+    "codigo_postal": "1043"
+  }
+}
+```
+**✨ NUEVO: Estos datos se guardan en la tabla `leads` y son editables desde el panel del CRM. El vendedor puede completarlos o corregirlos manualmente.**
 
 ### Output esperado
 ```json
@@ -216,12 +277,25 @@ Actualizar el estado del lead en la base de datos y registrar el tracking de la 
   "lead": {
     "id": "uuid-xxx",
     "telefono_whatsapp": "+54 9 11 1234 5678",
-    "estado": "cotizacion_enviada",
-    "whatsapp_label": "en caliente",
+    "estado": "cotizado",
     "region": "CABA",
-    "ultima_interaccion": "2025-11-09T10:30:00Z"
+    "ultima_interaccion": "2025-11-09T10:30:00Z",
+    "email": "juan@example.com",
+    "dni": "12345678"
   },
-  "estado_anterior": "consulta_producto"
+  "estado_anterior": "en_conversacion"
+}
+```
+**✨ Si el lead pasó a "esperando_pago", el response incluirá `codigo_confirmacion`:**
+```json
+{
+  "success": true,
+  "mensaje": "Estado actualizado correctamente. Código de confirmación generado: TOP123",
+  "lead": {
+    "id": "uuid-xxx",
+    "estado": "esperando_pago",
+    "codigo_confirmacion": "TOP123"
+  }
 }
 ```
 

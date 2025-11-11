@@ -40,7 +40,7 @@ export default async function PedidosPage() {
     FROM leads l
     INNER JOIN lead_pedidos p ON p.lead_id = l.id
     LEFT JOIN turnos t ON t.lead_id = l.id
-    WHERE l.estado IN ('pagado', 'turno_pendiente', 'turno_agendado', 'pedido_enviado', 'pedido_finalizado')
+    WHERE l.estado IN ('pedido_confirmado', 'turno_agendado', 'pedido_enviado', 'pedido_finalizado')
     ORDER BY p.created_at DESC
   `
 
@@ -92,7 +92,11 @@ export default async function PedidosPage() {
         </div>
       </div>
 
-      <PedidosTable pedidos={pedidos} />
+      <div className="flex gap-6">
+        <div className="flex-1">
+          <PedidosTable pedidos={pedidos} />
+        </div>
+      </div>
     </div>
   )
 }

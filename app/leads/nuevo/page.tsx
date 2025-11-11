@@ -1,11 +1,24 @@
-import { getSession } from "@/lib/auth"
+"use client"
+
+import { useState } from "react"
 import { NuevoLeadForm } from "@/components/leads/nuevo-lead-form"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft } from "lucide-react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 
-export default async function NuevoLeadPage() {
-  await getSession()
+export default function NuevoLeadPage() {
+  const [open, setOpen] = useState(true)
+  const router = useRouter()
+
+  const handleClose = () => {
+    setOpen(false)
+    router.push("/leads")
+  }
+
+  const handleSuccess = () => {
+    router.push("/leads")
+  }
 
   return (
     <div className="p-8">
@@ -20,7 +33,11 @@ export default async function NuevoLeadPage() {
         <p className="text-slate-600">Registrar un nuevo cliente potencial</p>
       </div>
 
-      <NuevoLeadForm />
+      <NuevoLeadForm 
+        open={open} 
+        onOpenChange={handleClose}
+        onSuccess={handleSuccess}
+      />
     </div>
   )
 }

@@ -5,7 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
-import { X, Phone, MessageSquare, ShoppingCart, Trash2 } from "lucide-react"
+import { Input } from "@/components/ui/input"
+import { X, Phone, MessageSquare, ShoppingCart, Trash2, Edit, Save } from "lucide-react"
 import type { User as AuthUser } from "@/lib/auth"
 import { cn } from "@/lib/utils"
 import {
@@ -23,8 +24,10 @@ import {
 interface LeadDetailPanelProps {
   lead: {
     id: string
-    nombre: string
-    telefono: string
+    nombre?: string
+    nombre_cliente?: string
+    telefono?: string
+    telefono_whatsapp?: string
     canal: string
     mensaje_inicial: string
     origen: string
@@ -34,7 +37,8 @@ interface LeadDetailPanelProps {
     ultimo_contacto_at: string | null
     notas: string | null
     created_at: string
-    whatsapp_label: string
+    whatsapp_label?: string | null
+    codigo_confirmacion?: string | null
     // Datos recolectados
     medida_neumatico?: string | null
     marca_preferida?: string | null
@@ -43,13 +47,20 @@ interface LeadDetailPanelProps {
     forma_pago?: string | null
     ultimo_total?: number | null
     region?: string
+    // 🆕 Campos editables del cliente
+    email?: string | null
+    dni?: string | null
+    direccion?: string | null
+    localidad?: string | null
+    provincia?: string | null
+    codigo_postal?: string | null
     // 🆕 Producto elegido (campos nuevos)
     producto_descripcion?: string | null
     forma_pago_detalle?: string | null
     cantidad?: number | null
     precio_final?: number | null
     // 🆕 Información de turno
-    tiene_turno?: boolean
+    tiene_turno?: number | boolean
     turno_fecha?: string | null
     turno_hora?: string | null
     turno_estado?: string | null
@@ -62,7 +73,18 @@ interface LeadDetailPanelProps {
 }
 
 export function LeadDetailPanel({ lead, users, currentUser, onClose, onUpdate, onDelete }: LeadDetailPanelProps) {
+  // Compatibilidad con campos antiguos y nuevos
+  const nombre = lead.nombre_cliente || lead.nombre || "Sin nombre"
+  const telefono = lead.telefono_whatsapp || lead.telefono || "Sin teléfono"
+  
   const [notas, setNotas] = useState(lead.notas || "")
+  const [email, setEmail] = useState(lead.email || "")
+  const [dni, setDni] = useState(lead.dni || "")
+  const [direccion, setDireccion] = useState(lead.direccion || "")
+  const [localidad, setLocalidad] = useState(lead.localidad || "")
+  const [provincia, setProvincia] = useState(lead.provincia || "")
+  const [codigoPostal, setCodigoPostal] = useState(lead.codigo_postal || "")
+  const [editandoDatos, setEditandoDatos] = useState(false)
   const [pagos, setPagos] = useState<any[]>([])
   const [loadingPagos, setLoadingPagos] = useState(true)
   const [deleting, setDeleting] = useState(false)
@@ -87,6 +109,18 @@ export function LeadDetailPanel({ lead, users, currentUser, onClose, onUpdate, o
 
   const handleSaveNotas = async () => {
     onUpdate({ notas })
+  }
+
+  const handleSaveDatosCliente = async () => {
+    onUpdate({ 
+      email, 
+      dni, 
+      direccion, 
+      localidad, 
+      provincia, 
+      codigo_postal: codigoPostal 
+    })
+    setEditandoDatos(false)
   }
 
   const handleChangeEstado = async (nuevoEstado: string) => {
@@ -117,7 +151,7 @@ export function LeadDetailPanel({ lead, users, currentUser, onClose, onUpdate, o
   }
 
   const openWhatsApp = () => {
-    const phone = lead.telefono.replace(/\D/g, "")
+    const phone = telefono.replace(/\D/g, "")
     window.open(`https://wa.me/${phone}`, "_blank")
   }
 
@@ -131,23 +165,23 @@ export function LeadDetailPanel({ lead, users, currentUser, onClose, onUpdate, o
 
   return (
     <div className="w-96 flex-shrink-0">
-      <Card className="bg-slate-900 border-slate-800 sticky top-8">
-        <CardHeader className="border-b border-slate-800">
+      <Card className="bg-white border-2 border-blue-100 shadow-xl sticky top-8">
+        <CardHeader className="border-b-2 border-blue-100 bg-gradient-to-r from-blue-50 to-cyan-50">
           <div className="flex items-start justify-between">
             <div className="flex-1">
-              <CardTitle className="text-white text-lg">{lead.nombre}</CardTitle>
-              <div className="flex items-center gap-2 text-sm text-slate-400 mt-1">
-                <Phone className="w-3 h-3" />
-                <span className="font-mono">{lead.telefono}</span>
+              <CardTitle className="text-slate-900 text-lg font-bold">{nombre}</CardTitle>
+              <div className="flex items-center gap-2 text-sm text-slate-600 mt-1">
+                <Phone className="w-3 h-3 text-blue-600" />
+                <span className="font-mono">{telefono}</span>
               </div>
             </div>
-            <Button variant="ghost" size="sm" onClick={onClose} className="text-slate-400 hover:text-white">
+            <Button variant="ghost" size="sm" onClick={onClose} className="text-slate-600 hover:text-slate-900 hover:bg-blue-100">
               <X className="w-4 h-4" />
             </Button>
           </div>
         </CardHeader>
 
-        <CardContent className="p-4 space-y-4 max-h-[calc(100vh-12rem)] overflow-y-auto">
+        <CardContent className="p-4 space-y-4 max-h-[calc(100vh-12rem)] overflow-y-auto bg-blue-50/30">
           {/* Quick Actions */}
           <div className="space-y-2">
             <Button onClick={openWhatsApp} className="w-full bg-green-600 hover:bg-green-700">
@@ -159,80 +193,201 @@ export function LeadDetailPanel({ lead, users, currentUser, onClose, onUpdate, o
           {/* Info */}
           <div className="space-y-2">
             <div className="flex items-center gap-2 text-sm flex-wrap">
-              <Badge variant="secondary" className="bg-slate-800 text-slate-300">
-                {lead.canal}
+              <Badge variant="secondary" className="bg-blue-100 text-blue-700 border border-blue-200">
+                WhatsApp
               </Badge>
-              {lead.whatsapp_label && (
-                <Badge variant="secondary" className="bg-slate-800 text-slate-300">
-                  {lead.whatsapp_label}
+              {lead.region && (
+                <Badge variant="outline" className="border-slate-300 text-slate-600">
+                  {lead.region}
                 </Badge>
               )}
-              {lead.origen && (
-                <Badge variant="outline" className="border-slate-700 text-slate-400">
-                  {lead.origen}
+              {lead.codigo_confirmacion && lead.estado === 'esperando_pago' && (
+                <Badge variant="outline" className="border-amber-400 bg-amber-50 text-amber-700 font-mono">
+                  Código: {lead.codigo_confirmacion}
                 </Badge>
               )}
             </div>
 
             {lead.mensaje_inicial && (
-              <div className="bg-slate-800 rounded-lg p-3">
-                <div className="flex items-center gap-2 text-xs text-slate-400 mb-2">
+              <div className="bg-white border-2 border-blue-100 rounded-lg p-3">
+                <div className="flex items-center gap-2 text-xs text-blue-600 mb-2">
                   <MessageSquare className="w-3 h-3" />
-                  <span>Mensaje inicial</span>
+                  <span className="font-semibold">Mensaje inicial</span>
                 </div>
-                <p className="text-sm text-slate-300">{lead.mensaje_inicial}</p>
+                <p className="text-sm text-slate-700">{lead.mensaje_inicial}</p>
               </div>
             )}
           </div>
 
-          {/* Datos del Cliente */}
+          {/* Datos del Cliente - EDITABLES */}
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-300">Información Recolectada</label>
-            <div className="bg-slate-800 rounded-lg p-3 space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-bold text-slate-700">Datos del Cliente</label>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => editandoDatos ? handleSaveDatosCliente() : setEditandoDatos(true)}
+                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+              >
+                {editandoDatos ? <><Save className="w-3 h-3 mr-1" /> Guardar</> : <><Edit className="w-3 h-3 mr-1" /> Editar</>}
+              </Button>
+            </div>
+            <div className="bg-white border-2 border-slate-200 rounded-lg p-3 space-y-2">
+              {editandoDatos ? (
+                <>
+                  <div>
+                    <label className="text-xs text-slate-500">Email</label>
+                    <Input 
+                      value={email} 
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="email@ejemplo.com"
+                      className="text-sm mt-1"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-slate-500">DNI</label>
+                    <Input 
+                      value={dni} 
+                      onChange={(e) => setDni(e.target.value)}
+                      placeholder="12345678"
+                      className="text-sm mt-1"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-slate-500">Dirección</label>
+                    <Input 
+                      value={direccion} 
+                      onChange={(e) => setDireccion(e.target.value)}
+                      placeholder="Calle y número"
+                      className="text-sm mt-1"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-xs text-slate-500">Localidad</label>
+                      <Input 
+                        value={localidad} 
+                        onChange={(e) => setLocalidad(e.target.value)}
+                        placeholder="Ciudad"
+                        className="text-sm mt-1"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-slate-500">Provincia</label>
+                      <Input 
+                        value={provincia} 
+                        onChange={(e) => setProvincia(e.target.value)}
+                        placeholder="Provincia"
+                        className="text-sm mt-1"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-xs text-slate-500">Código Postal</label>
+                    <Input 
+                      value={codigoPostal} 
+                      onChange={(e) => setCodigoPostal(e.target.value)}
+                      placeholder="1234"
+                      className="text-sm mt-1"
+                    />
+                  </div>
+                </>
+              ) : (
+                <>
+                  {email && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-slate-600">Email:</span>
+                      <span className="text-slate-900 font-medium">{email}</span>
+                    </div>
+                  )}
+                  {dni && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-slate-600">DNI:</span>
+                      <span className="text-slate-900 font-medium">{dni}</span>
+                    </div>
+                  )}
+                  {direccion && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-slate-600">Dirección:</span>
+                      <span className="text-slate-900 font-medium">{direccion}</span>
+                    </div>
+                  )}
+                  {localidad && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-slate-600">Localidad:</span>
+                      <span className="text-slate-900 font-medium">{localidad}</span>
+                    </div>
+                  )}
+                  {provincia && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-slate-600">Provincia:</span>
+                      <span className="text-slate-900 font-medium">{provincia}</span>
+                    </div>
+                  )}
+                  {codigoPostal && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-slate-600">CP:</span>
+                      <span className="text-slate-900 font-medium">{codigoPostal}</span>
+                    </div>
+                  )}
+                  {!email && !dni && !direccion && !localidad && !provincia && !codigoPostal && (
+                    <div className="text-sm text-slate-400 text-center py-2">
+                      No hay datos del cliente aún
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Información Recolectada (consulta de producto) */}
+          <div className="space-y-2">
+            <label className="text-sm font-bold text-slate-700">Información Recolectada</label>
+            <div className="bg-white border-2 border-slate-200 rounded-lg p-3 space-y-2">
               {lead.tipo_vehiculo && (
                 <div className="flex justify-between text-sm">
-                  <span className="text-slate-400">Vehículo:</span>
-                  <span className="text-white font-medium">{lead.tipo_vehiculo}</span>
+                  <span className="text-slate-600">Vehículo:</span>
+                  <span className="text-slate-900 font-medium">{lead.tipo_vehiculo}</span>
                 </div>
               )}
               {lead.medida_neumatico && (
                 <div className="flex justify-between text-sm">
-                  <span className="text-slate-400">Medida:</span>
-                  <span className="text-white font-medium">{lead.medida_neumatico}</span>
+                  <span className="text-slate-600">Medida:</span>
+                  <span className="text-slate-900 font-medium">{lead.medida_neumatico}</span>
                 </div>
               )}
               {lead.marca_preferida && (
                 <div className="flex justify-between text-sm">
-                  <span className="text-slate-400">Marca Preferida:</span>
-                  <span className="text-white font-medium">{lead.marca_preferida}</span>
+                  <span className="text-slate-600">Marca Preferida:</span>
+                  <span className="text-slate-900 font-medium">{lead.marca_preferida}</span>
                 </div>
               )}
               {lead.tipo_uso && (
                 <div className="flex justify-between text-sm">
-                  <span className="text-slate-400">Uso:</span>
-                  <span className="text-white font-medium">{lead.tipo_uso}</span>
+                  <span className="text-slate-600">Uso:</span>
+                  <span className="text-slate-900 font-medium">{lead.tipo_uso}</span>
                 </div>
               )}
               {lead.forma_pago && (
                 <div className="flex justify-between text-sm">
-                  <span className="text-slate-400">Forma de Pago:</span>
-                  <span className="text-white font-medium">{lead.forma_pago}</span>
+                  <span className="text-slate-600">Forma de Pago:</span>
+                  <span className="text-slate-900 font-medium">{lead.forma_pago}</span>
                 </div>
               )}
               {lead.ultimo_total && (
                 <div className="flex justify-between text-sm">
-                  <span className="text-slate-400">Último Total:</span>
-                  <span className="text-white font-medium">{formatPrice(lead.ultimo_total)}</span>
+                  <span className="text-slate-600">Último Total:</span>
+                  <span className="text-slate-900 font-medium">{formatPrice(lead.ultimo_total)}</span>
                 </div>
               )}
               {lead.region && (
                 <div className="flex justify-between text-sm">
-                  <span className="text-slate-400">Región:</span>
-                  <span className="text-white font-medium">{lead.region}</span>
+                  <span className="text-slate-600">Región:</span>
+                  <span className="text-slate-900 font-medium">{lead.region}</span>
                 </div>
               )}
               {!lead.tipo_vehiculo && !lead.medida_neumatico && !lead.marca_preferida && !lead.forma_pago && (
-                <p className="text-sm text-slate-500 italic">No hay información recolectada aún</p>
+                <p className="text-sm text-slate-400 italic">No hay información recolectada aún</p>
               )}
             </div>
           </div>
@@ -240,36 +395,36 @@ export function LeadDetailPanel({ lead, users, currentUser, onClose, onUpdate, o
           {/* 🆕 Detalle de Compra - Solo si hay producto elegido */}
           {(lead.producto_descripcion || lead.precio_final) && (
             <div className="space-y-2">
-              <label className="text-sm font-medium text-emerald-400 flex items-center gap-2">
+              <label className="text-sm font-bold text-emerald-700 flex items-center gap-2">
                 <ShoppingCart className="w-4 h-4" />
                 Detalle de Compra
               </label>
-              <div className="bg-emerald-950 border border-emerald-800 rounded-lg p-3 space-y-3">
+              <div className="bg-gradient-to-br from-emerald-50 to-green-50 border-2 border-emerald-200 rounded-lg p-3 space-y-3">
                 {lead.producto_descripcion && (
                   <div>
-                    <div className="text-xs text-emerald-400 mb-1">Producto elegido:</div>
-                    <div className="text-sm text-white font-semibold">{lead.producto_descripcion}</div>
+                    <div className="text-xs text-emerald-700 font-semibold mb-1">Producto elegido:</div>
+                    <div className="text-sm text-emerald-900 font-semibold">{lead.producto_descripcion}</div>
                   </div>
                 )}
                 
                 {lead.cantidad && (
                   <div className="flex justify-between text-sm">
-                    <span className="text-emerald-300">Cantidad:</span>
-                    <span className="text-white font-medium">{lead.cantidad} unidades</span>
+                    <span className="text-emerald-700">Cantidad:</span>
+                    <span className="text-emerald-900 font-medium">{lead.cantidad} unidades</span>
                   </div>
                 )}
 
                 {lead.precio_final && (
-                  <div className="flex justify-between text-sm pt-2 border-t border-emerald-800">
-                    <span className="text-emerald-300 font-semibold">TOTAL:</span>
-                    <span className="text-white font-bold text-lg">{formatPrice(lead.precio_final)}</span>
+                  <div className="flex justify-between text-sm pt-2 border-t-2 border-emerald-300">
+                    <span className="text-emerald-700 font-semibold">TOTAL:</span>
+                    <span className="text-emerald-900 font-bold text-lg">{formatPrice(lead.precio_final)}</span>
                   </div>
                 )}
 
                 {lead.forma_pago_detalle && (
                   <div className="flex justify-between text-sm">
-                    <span className="text-emerald-300">Forma de pago:</span>
-                    <span className="text-white font-medium">{lead.forma_pago_detalle}</span>
+                    <span className="text-emerald-700">Forma de pago:</span>
+                    <span className="text-emerald-900 font-medium">{lead.forma_pago_detalle}</span>
                   </div>
                 )}
 
@@ -277,7 +432,7 @@ export function LeadDetailPanel({ lead, users, currentUser, onClose, onUpdate, o
                 {lead.estado === 'pago_informado' && (
                   <Button
                     onClick={() => handleChangeEstado('pedido_confirmado')}
-                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white mt-2"
+                    className="w-full bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white font-bold mt-2 shadow-lg"
                   >
                     ✅ Confirmar Pago
                   </Button>
@@ -285,28 +440,28 @@ export function LeadDetailPanel({ lead, users, currentUser, onClose, onUpdate, o
 
                 {/* Badge del estado del pedido */}
                 {lead.estado === 'esperando_pago' && (
-                  <Badge variant="outline" className="border-amber-500 text-amber-400 w-full justify-center">
+                  <Badge variant="outline" className="border-2 border-amber-400 text-amber-700 bg-amber-50 w-full justify-center font-semibold">
                     ⏳ Esperando pago del cliente
                   </Badge>
                 )}
                 {lead.estado === 'pago_informado' && (
-                  <Badge variant="outline" className="border-blue-500 text-blue-400 w-full justify-center">
+                  <Badge variant="outline" className="border-2 border-blue-400 text-blue-700 bg-blue-50 w-full justify-center font-semibold">
                     💬 Cliente informó pago - Confirmar
                   </Badge>
                 )}
                 {lead.estado === 'pedido_confirmado' && (
-                  <Badge variant="outline" className="border-emerald-500 text-emerald-400 w-full justify-center">
+                  <Badge variant="outline" className="border-2 border-emerald-500 text-emerald-700 bg-emerald-50 w-full justify-center font-semibold">
                     ✅ Pago confirmado
                   </Badge>
                 )}
 
                 {/* 🆕 Estado del Turno - Siempre visible */}
-                <div className="mt-3 pt-3 border-t border-emerald-800">
-                  <div className="text-xs text-emerald-400 mb-2">Estado del turno:</div>
+                <div className="mt-3 pt-3 border-t-2 border-emerald-300">
+                  <div className="text-xs text-emerald-700 font-bold mb-2">Estado del turno:</div>
                   {lead.tiene_turno && lead.turno_fecha ? (
-                    <div className="bg-blue-950/50 border border-blue-800 rounded p-2 space-y-1">
+                    <div className="bg-gradient-to-br from-blue-50 to-cyan-50 border-2 border-blue-200 rounded-lg p-2 space-y-1">
                       <div className="flex items-center justify-between">
-                        <span className="text-sm text-blue-300">
+                        <span className="text-sm text-blue-900 font-medium">
                           📅 {new Date(lead.turno_fecha).toLocaleDateString('es-AR', { 
                             day: '2-digit', 
                             month: '2-digit', 
@@ -314,7 +469,7 @@ export function LeadDetailPanel({ lead, users, currentUser, onClose, onUpdate, o
                           })}
                         </span>
                         {lead.turno_hora && (
-                          <span className="text-sm text-blue-300">
+                          <span className="text-sm text-blue-900 font-medium">
                             🕐 {lead.turno_hora}
                           </span>
                         )}
@@ -322,10 +477,10 @@ export function LeadDetailPanel({ lead, users, currentUser, onClose, onUpdate, o
                       <Badge 
                         variant="outline" 
                         className={cn(
-                          "w-full justify-center",
-                          lead.turno_estado === 'pendiente' && "border-amber-500 text-amber-400",
-                          lead.turno_estado === 'confirmado' && "border-green-500 text-green-400",
-                          lead.turno_estado === 'completado' && "border-emerald-500 text-emerald-400"
+                          "w-full justify-center font-semibold",
+                          lead.turno_estado === 'pendiente' && "border-2 border-amber-400 text-amber-700 bg-amber-50",
+                          lead.turno_estado === 'confirmado' && "border-2 border-green-500 text-green-700 bg-green-50",
+                          lead.turno_estado === 'completado' && "border-2 border-emerald-500 text-emerald-700 bg-emerald-50"
                         )}
                       >
                         {lead.turno_estado === 'pendiente' && '⏳ Turno Pendiente'}
@@ -334,7 +489,7 @@ export function LeadDetailPanel({ lead, users, currentUser, onClose, onUpdate, o
                       </Badge>
                     </div>
                   ) : (
-                    <Badge variant="outline" className="border-slate-600 text-slate-400 w-full justify-center">
+                    <Badge variant="outline" className="border-2 border-amber-300 text-amber-700 bg-amber-50 w-full justify-center font-semibold">
                       ⏳ Turno Pendiente de Agendar
                     </Badge>
                   )}
@@ -345,13 +500,13 @@ export function LeadDetailPanel({ lead, users, currentUser, onClose, onUpdate, o
 
           {/* Estado */}
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-300">Cambiar estado</label>
+            <label className="text-sm font-bold text-slate-700">Cambiar estado</label>
             <div className="grid grid-cols-2 gap-2">
               <Button
                 size="sm"
                 variant="outline"
                 onClick={() => handleChangeEstado("en_conversacion")}
-                className="border-slate-700 text-slate-300 bg-transparent text-xs"
+                className="border-2 border-blue-300 text-blue-700 bg-blue-50 hover:bg-blue-100 text-xs font-medium"
               >
                 En Conversación
               </Button>
@@ -359,7 +514,7 @@ export function LeadDetailPanel({ lead, users, currentUser, onClose, onUpdate, o
                 size="sm"
                 variant="outline"
                 onClick={() => handleChangeEstado("cotizado")}
-                className="border-slate-700 text-slate-300 bg-transparent text-xs"
+                className="border-2 border-purple-300 text-purple-700 bg-purple-50 hover:bg-purple-100 text-xs font-medium"
               >
                 Cotizado
               </Button>
@@ -367,7 +522,7 @@ export function LeadDetailPanel({ lead, users, currentUser, onClose, onUpdate, o
                 size="sm"
                 variant="outline"
                 onClick={() => handleChangeEstado("esperando_pago")}
-                className="border-slate-700 text-slate-300 bg-transparent text-xs"
+                className="border-2 border-amber-300 text-amber-700 bg-amber-50 hover:bg-amber-100 text-xs font-medium"
               >
                 Esperando Pago
               </Button>
@@ -375,7 +530,7 @@ export function LeadDetailPanel({ lead, users, currentUser, onClose, onUpdate, o
                 size="sm"
                 variant="outline"
                 onClick={() => handleChangeEstado("pago_informado")}
-                className="border-slate-700 text-slate-300 bg-transparent text-xs"
+                className="border-2 border-cyan-300 text-cyan-700 bg-cyan-50 hover:bg-cyan-100 text-xs font-medium"
               >
                 Pago Informado
               </Button>
@@ -383,7 +538,7 @@ export function LeadDetailPanel({ lead, users, currentUser, onClose, onUpdate, o
                 size="sm"
                 variant="outline"
                 onClick={() => handleChangeEstado("pedido_confirmado")}
-                className="border-emerald-700 text-emerald-300 bg-transparent text-xs"
+                className="border-2 border-emerald-400 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 text-xs font-medium"
               >
                 Pedido Confirmado
               </Button>
@@ -391,7 +546,7 @@ export function LeadDetailPanel({ lead, users, currentUser, onClose, onUpdate, o
                 size="sm"
                 variant="outline"
                 onClick={() => handleChangeEstado("perdido")}
-                className="border-red-700 text-red-300 bg-transparent text-xs"
+                className="border-2 border-red-300 text-red-700 bg-red-50 hover:bg-red-100 text-xs font-medium"
               >
                 Perdido
               </Button>
@@ -401,8 +556,8 @@ export function LeadDetailPanel({ lead, users, currentUser, onClose, onUpdate, o
           {/* Pagos */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <label className="text-sm font-medium text-slate-300">Pagos</label>
-              <Badge variant="secondary" className="bg-slate-800 text-slate-300">
+              <label className="text-sm font-bold text-slate-700">Pagos</label>
+              <Badge variant="secondary" className="bg-blue-100 text-blue-700 border border-blue-200">
                 {pagos.length}
               </Badge>
             </div>
@@ -410,26 +565,26 @@ export function LeadDetailPanel({ lead, users, currentUser, onClose, onUpdate, o
             {loadingPagos ? (
               <p className="text-sm text-slate-500">Cargando...</p>
             ) : pagos.length === 0 ? (
-              <p className="text-sm text-slate-500">Sin pagos registrados</p>
+              <p className="text-sm text-slate-400 italic">Sin pagos registrados</p>
             ) : (
               <div className="space-y-2">
                 {pagos.map((pago) => (
-                  <div key={pago.id} className="bg-slate-800 rounded-lg p-3">
+                  <div key={pago.id} className="bg-white border-2 border-slate-200 rounded-lg p-3">
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-sm font-medium text-white">{formatPrice(pago.monto_reportado)}</span>
+                      <span className="text-sm font-bold text-slate-900">{formatPrice(pago.monto_reportado)}</span>
                       <Badge
                         className={
                           pago.estado === "verificado"
-                            ? "bg-green-900/50 text-green-300"
+                            ? "bg-green-100 text-green-700 border-2 border-green-300"
                             : pago.estado === "rechazado"
-                              ? "bg-red-900/50 text-red-300"
-                              : "bg-yellow-900/50 text-yellow-300"
+                              ? "bg-red-100 text-red-700 border-2 border-red-300"
+                              : "bg-yellow-100 text-yellow-700 border-2 border-yellow-300"
                         }
                       >
                         {pago.estado}
                       </Badge>
                     </div>
-                    <p className="text-xs text-slate-400">{pago.metodo}</p>
+                    <p className="text-xs text-slate-600">{pago.metodo}</p>
                   </div>
                 ))}
               </div>
@@ -438,21 +593,21 @@ export function LeadDetailPanel({ lead, users, currentUser, onClose, onUpdate, o
 
           {/* Notas */}
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-300">Notas</label>
+            <label className="text-sm font-bold text-slate-700">Notas</label>
             <Textarea
               value={notas}
               onChange={(e) => setNotas(e.target.value)}
               placeholder="Agregar notas sobre el lead..."
-              className="bg-slate-800 border-slate-700 text-white min-h-[100px]"
+              className="bg-white border-2 border-slate-300 text-slate-900 focus:border-blue-500 min-h-[100px]"
             />
-            <Button onClick={handleSaveNotas} size="sm" className="w-full bg-blue-600 hover:bg-blue-700">
+            <Button onClick={handleSaveNotas} size="sm" className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-bold shadow-lg">
               Guardar Notas
             </Button>
           </div>
 
           {/* Crear Pedido */}
           {lead.estado === "pago_verificado" && (
-            <Button className="w-full bg-emerald-600 hover:bg-emerald-700">
+            <Button className="w-full bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white font-bold shadow-lg">
               <ShoppingCart className="w-4 h-4 mr-2" />
               Crear Pedido
             </Button>
@@ -464,27 +619,27 @@ export function LeadDetailPanel({ lead, users, currentUser, onClose, onUpdate, o
               <AlertDialogTrigger asChild>
                 <Button 
                   variant="outline" 
-                  className="w-full border-red-700 text-red-500 hover:bg-red-900/20 hover:text-red-400"
+                  className="w-full border-2 border-red-400 text-red-700 bg-red-50 hover:bg-red-100 hover:text-red-800 font-medium"
                   disabled={deleting}
                 >
                   <Trash2 className="w-4 h-4 mr-2" />
                   Eliminar Lead
                 </Button>
               </AlertDialogTrigger>
-              <AlertDialogContent className="bg-slate-900 border-slate-800">
+              <AlertDialogContent className="bg-white border-2 border-red-200">
                 <AlertDialogHeader>
-                  <AlertDialogTitle className="text-white">¿Eliminar lead?</AlertDialogTitle>
-                  <AlertDialogDescription className="text-slate-400">
-                    Esta acción no se puede deshacer. Se eliminará el lead <strong>{lead.nombre}</strong> y todos sus datos asociados (consultas, pedidos, pagos).
+                  <AlertDialogTitle className="text-red-700 font-bold">¿Eliminar lead?</AlertDialogTitle>
+                  <AlertDialogDescription className="text-slate-700">
+                    Esta acción no se puede deshacer. Se eliminará el lead <strong className="text-red-700">{nombre}</strong> y todos sus datos asociados (consultas, pedidos, pagos).
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                  <AlertDialogCancel className="bg-slate-800 border-slate-700 text-white hover:bg-slate-700">
+                  <AlertDialogCancel className="bg-slate-100 border-2 border-slate-300 text-slate-700 hover:bg-slate-200">
                     Cancelar
                   </AlertDialogCancel>
                   <AlertDialogAction
                     onClick={handleDelete}
-                    className="bg-red-600 hover:bg-red-700 text-white"
+                    className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-bold shadow-lg"
                     disabled={deleting}
                   >
                     {deleting ? "Eliminando..." : "Eliminar"}

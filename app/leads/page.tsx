@@ -4,6 +4,7 @@ import { LeadsKanban } from "@/components/leads/leads-kanban"
 import { Button } from "@/components/ui/button"
 import { Plus, ArrowLeft } from "lucide-react"
 import Link from "next/link"
+import Image from "next/image"
 
 export default async function LeadsPage() {
   const user = await getSession()
@@ -22,6 +23,14 @@ export default async function LeadsPage() {
       l.created_at,
       l.updated_at,
       l.origen,
+      l.codigo_confirmacion,
+      l.email,
+      l.dni,
+      l.direccion,
+      l.localidad,
+      l.provincia,
+      l.codigo_postal,
+      l.notas,
       u.nombre as asignado_nombre,
       -- Datos adicionales de consultas
       (SELECT medida_neumatico FROM lead_consultas WHERE lead_id = l.id ORDER BY created_at DESC LIMIT 1) as medida_neumatico,
@@ -59,6 +68,14 @@ export default async function LeadsPage() {
     estado: String(l.estado || 'nuevo') as "nuevo" | "en_conversacion" | "cotizado" | "esperando_pago" | "pago_informado" | "pedido_confirmado" | "perdido",
     region: String(l.region || 'INTERIOR'),
     whatsapp_label: String(l.whatsapp_label || 'en caliente'),
+    codigo_confirmacion: l.codigo_confirmacion || null,
+    // Datos del cliente
+    email: l.email || null,
+    dni: l.dni || null,
+    direccion: l.direccion || null,
+    localidad: l.localidad || null,
+    provincia: l.provincia || null,
+    codigo_postal: l.codigo_postal || null,
     // Datos adicionales
     medida_neumatico: l.medida_neumatico || null,
     marca_preferida: l.marca_preferida || null,
@@ -89,7 +106,7 @@ export default async function LeadsPage() {
     origen: String(l.origen || 'whatsapp'),
     ultimo_contacto_at: l.ultima_interaccion || null,
     mensaje_inicial: '',
-    notas: null,
+    notas: l.notas || null,
   }))
 
   // Fetch users for assignment
@@ -120,12 +137,22 @@ export default async function LeadsPage() {
             <p className="text-slate-600">Seguimiento de leads y funnel de ventas</p>
           </div>
         </div>
-        <Link href="/leads/nuevo">
-          <Button className="bg-blue-600 hover:bg-blue-700">
-            <Plus className="w-4 h-4 mr-2" />
-            Nuevo Lead
-          </Button>
-        </Link>
+        <div className="flex items-center gap-4">
+          <Image 
+            src="/images/image.png" 
+            alt="TopNeum" 
+            width={200} 
+            height={60}
+            className="h-12 w-auto"
+            priority
+          />
+          <Link href="/leads/nuevo">
+            <Button className="bg-blue-600 hover:bg-blue-700">
+              <Plus className="w-4 h-4 mr-2" />
+              Nuevo Lead
+            </Button>
+          </Link>
+        </div>
       </div>
 
       <LeadsKanban leads={leads} users={users} currentUser={user!} />
