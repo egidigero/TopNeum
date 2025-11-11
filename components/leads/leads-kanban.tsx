@@ -10,14 +10,13 @@ import { LeadDetailPanel } from "./lead-detail-panel"
 import type { AuthUser } from "@/lib/auth"
 
 type LeadEstado =
-  | "conversacion_iniciada"
-  | "consulta_producto"
-  | "cotizacion_enviada"
-  | "en_proceso_de_pago"
-  | "pagado"
-  | "turno_pendiente"
-  | "turno_agendado"
-  | "abandonado"
+  | "nuevo"
+  | "en_conversacion"
+  | "cotizado"
+  | "esperando_pago"
+  | "pago_informado"
+  | "pedido_confirmado"
+  | "perdido"
 
 interface Lead {
   id: string
@@ -56,14 +55,13 @@ interface LeadsKanbanProps {
 }
 
 const ESTADOS: Array<{ value: LeadEstado; label: string; color: string }> = [
-  { value: "conversacion_iniciada", label: "🔥 En Caliente", color: "bg-orange-100 text-orange-700 border-orange-200" },
-  { value: "consulta_producto", label: "💬 Consultando", color: "bg-blue-100 text-blue-700 border-blue-200" },
-  { value: "cotizacion_enviada", label: "📋 Cotizado", color: "bg-purple-100 text-purple-700 border-purple-200" },
-  { value: "en_proceso_de_pago", label: "💳 Esperando Pago", color: "bg-yellow-100 text-yellow-700 border-yellow-200" },
-  { value: "pagado", label: "✅ Pagado", color: "bg-green-100 text-green-700 border-green-200" },
-  { value: "turno_pendiente", label: "📅 Turno Pendiente", color: "bg-cyan-100 text-cyan-700 border-cyan-200" },
-  { value: "turno_agendado", label: "🗓️ Turno Agendado", color: "bg-teal-100 text-teal-700 border-teal-200" },
-  { value: "abandonado", label: "❌ Abandonado", color: "bg-red-100 text-red-700 border-red-200" },
+  { value: "nuevo", label: "🆕 Nuevo", color: "bg-slate-100 text-slate-700 border-slate-200" },
+  { value: "en_conversacion", label: "💬 En Conversación", color: "bg-blue-100 text-blue-700 border-blue-200" },
+  { value: "cotizado", label: "📋 Cotizado", color: "bg-purple-100 text-purple-700 border-purple-200" },
+  { value: "esperando_pago", label: "⏳ Esperando Pago", color: "bg-amber-100 text-amber-700 border-amber-200" },
+  { value: "pago_informado", label: "💬 Pago Informado", color: "bg-cyan-100 text-cyan-700 border-cyan-200" },
+  { value: "pedido_confirmado", label: "✅ Pedido Confirmado", color: "bg-emerald-100 text-emerald-700 border-emerald-200" },
+  { value: "perdido", label: "❌ Perdido", color: "bg-red-100 text-red-700 border-red-200" },
 ]
 
 export function LeadsKanban({ leads: initialLeads, users, currentUser }: LeadsKanbanProps) {

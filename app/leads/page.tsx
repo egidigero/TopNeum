@@ -42,7 +42,7 @@ export default async function LeadsPage() {
       (SELECT COUNT(*) FROM lead_pedidos WHERE lead_id = l.id AND estado_pago IN ('pagado', 'sena_recibida')) as pagos_count
     FROM leads l
     LEFT JOIN users u ON l.asignado_a = u.id
-    WHERE l.estado NOT IN ('pedido_finalizado', 'abandonado')
+    WHERE l.estado NOT IN ('pedido_confirmado', 'perdido')
     ORDER BY l.ultima_interaccion DESC
   `
 
@@ -51,7 +51,7 @@ export default async function LeadsPage() {
     nombre: String(l.nombre_cliente || ''),
     telefono: String(l.telefono_whatsapp || ''),
     canal: 'whatsapp',
-    estado: String(l.estado || 'conversacion_iniciada') as "conversacion_iniciada" | "consulta_producto" | "cotizacion_enviada" | "en_proceso_de_pago" | "pagado" | "turno_pendiente" | "turno_agendado" | "abandonado",
+    estado: String(l.estado || 'nuevo') as "nuevo" | "en_conversacion" | "cotizado" | "esperando_pago" | "pago_informado" | "pedido_confirmado" | "perdido",
     region: String(l.region || 'INTERIOR'),
     whatsapp_label: String(l.whatsapp_label || 'en caliente'),
     // Datos adicionales
