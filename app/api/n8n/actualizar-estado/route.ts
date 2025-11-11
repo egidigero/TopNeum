@@ -21,12 +21,25 @@ export async function POST(request: NextRequest) {
     // }
 
     const body = await request.json()
-    const { 
+    let { 
       telefono_whatsapp, 
       nuevo_estado, 
       cambiado_por = 'agente_llm',
       datos_adicionales 
     } = body
+
+    // Normalizar teléfono (eliminar espacios y guiones)
+    if (telefono_whatsapp) {
+      telefono_whatsapp = String(telefono_whatsapp).replace(/[\s\-()]/g, '')
+      // Asegurar formato con +
+      if (!telefono_whatsapp.startsWith('+')) {
+        if (telefono_whatsapp.startsWith('54')) {
+          telefono_whatsapp = '+' + telefono_whatsapp
+        } else {
+          telefono_whatsapp = '+54' + telefono_whatsapp
+        }
+      }
+    }
 
     console.log('[n8n-estado] 📝 Actualizando estado:', { 
       telefono_whatsapp, 

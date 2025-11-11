@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { sql } from "@/lib/db"
 import { requireAuth } from "@/lib/auth"
 
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     await requireAuth()
 
@@ -12,7 +12,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
       return NextResponse.json({ error: "No updates provided" }, { status: 400 })
     }
 
-    const leadId = params.id
+    const { id: leadId } = await params
     
     // Update simple por campo
     let result: any[] = []
@@ -52,27 +52,33 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     await requireAuth()
 
-    const { id } = params
+    const { id } = await params
 
     // Eliminar en orden (por las foreign keys)
-    // 1. Entregas
-    await sql`DELETE FROM lead_entregas WHERE lead_id = ${id}`
+    // Usar try-catch para cada tabla por si no existe
+    try {
+      await sql`DELETE FROM lead_entregas WHERE lead_id = ${id}`
+    } catch (e) {}
     
-    // 2. Pedidos
-    await sql`DELETE FROM lead_pedidos WHERE lead_id = ${id}`
+    try {
+      await sql`DELETE FROM lead_pedidos WHERE lead_id = ${id}`
+    } catch (e) {}
     
-    // 3. Cotizaciones
-    await sql`DELETE FROM lead_cotizaciones WHERE lead_id = ${id}`
+    try {
+      await sql`DELETE FROM lead_cotizaciones WHERE lead_id = ${id}`
+    } catch (e) {}
     
-    // 4. Consultas
-    await sql`DELETE FROM lead_consultas WHERE lead_id = ${id}`
+    try {
+      await sql`DELETE FROM lead_consultas WHERE lead_id = ${id}`
+    } catch (e) {}
     
-    // 5. Historial
-    await sql`DELETE FROM lead_historial WHERE lead_id = ${id}`
+    try {
+      await sql`DELETE FROM lead_historial WHERE lead_id = ${id}`
+    } catch (e) {}
     
     // 6. Finalmente el lead
     await sql`DELETE FROM leads WHERE id = ${id}`
