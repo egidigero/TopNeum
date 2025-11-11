@@ -5,7 +5,7 @@ import type React from "react"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Phone, User, Calendar, DollarSign } from "lucide-react"
+import { Phone, User, Calendar, DollarSign, CalendarCheck, Package } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface LeadCardProps {
@@ -19,6 +19,14 @@ interface LeadCardProps {
     ultimo_contacto_at: string | null
     created_at: string
     pagos_count: number
+    // 🆕 Campos de producto
+    producto_descripcion?: string | null
+    precio_final?: number | null
+    // 🆕 Campos de turno
+    tiene_turno?: boolean
+    turno_fecha?: string | null
+    turno_hora?: string | null
+    turno_estado?: string | null
   }
   onClick: () => void
   onUpdate: (leadId: string, updates: any) => void
@@ -37,6 +45,20 @@ export function LeadCard({ lead, onClick, isSelected }: LeadCardProps) {
     if (diffDays === 1) return "Ayer"
     if (diffDays < 7) return `Hace ${diffDays} días`
     return d.toLocaleDateString("es-AR")
+  }
+
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat("es-AR", {
+      style: "currency",
+      currency: "ARS",
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(price)
+  }
+
+  const formatTurnoDate = (fecha: string) => {
+    const d = new Date(fecha)
+    return d.toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit" })
   }
 
   const openWhatsApp = (e: React.MouseEvent) => {
@@ -71,6 +93,44 @@ export function LeadCard({ lead, onClick, isSelected }: LeadCardProps) {
             <Phone className="w-4 h-4" />
           </Button>
         </div>
+
+        {/* 🆕 Producto Info */}
+        {lead.producto_descripcion && (
+          <div className="bg-emerald-950/40 border border-emerald-800/40 rounded-md p-2 space-y-1">
+            <div className="flex items-start gap-2">
+              <Package className="w-3 h-3 text-emerald-400 mt-0.5 flex-shrink-0" />
+              <p className="text-xs text-emerald-300 line-clamp-2">{lead.producto_descripcion}</p>
+            </div>
+            {lead.precio_final && (
+              <p className="text-sm font-bold text-emerald-400">{formatPrice(lead.precio_final)}</p>
+            )}
+          </div>
+        )}
+
+        {/* 🆕 Turno Info */}
+        {lead.tiene_turno && lead.turno_fecha && (
+          <div className="bg-blue-950/40 border border-blue-800/40 rounded-md p-2">
+            <div className="flex items-center gap-2">
+              <CalendarCheck className="w-3 h-3 text-blue-400" />
+              <span className="text-xs text-blue-300">
+                {formatTurnoDate(lead.turno_fecha)} {lead.turno_hora && `- ${lead.turno_hora}`}
+              </span>
+              {lead.turno_estado && (
+                <Badge
+                  variant="outline"
+                  className={cn(
+                    "text-xs border-0",
+                    lead.turno_estado === "pendiente" && "bg-amber-900/50 text-amber-300",
+                    lead.turno_estado === "confirmado" && "bg-green-900/50 text-green-300",
+                    lead.turno_estado === "completado" && "bg-emerald-900/50 text-emerald-300",
+                  )}
+                >
+                  {lead.turno_estado}
+                </Badge>
+              )}
+            </div>
+          </div>
+        )}
 
         <div className="flex flex-wrap gap-2">
           <Badge variant="secondary" className="bg-slate-800 text-slate-300 text-xs">

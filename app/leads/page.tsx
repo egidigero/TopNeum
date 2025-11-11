@@ -39,7 +39,12 @@ export default async function LeadsPage() {
       -- Contadores
       (SELECT COUNT(*) FROM lead_consultas WHERE lead_id = l.id) as total_consultas,
       (SELECT COUNT(*) FROM lead_pedidos WHERE lead_id = l.id) as total_pedidos,
-      (SELECT COUNT(*) FROM lead_pedidos WHERE lead_id = l.id AND estado_pago IN ('pagado', 'sena_recibida')) as pagos_count
+      (SELECT COUNT(*) FROM lead_pedidos WHERE lead_id = l.id AND estado_pago IN ('pagado', 'sena_recibida')) as pagos_count,
+      -- 🆕 Información de turnos
+      (SELECT COUNT(*) FROM turnos WHERE lead_id = l.id AND estado_turno != 'cancelado') as tiene_turno,
+      (SELECT fecha FROM turnos WHERE lead_id = l.id AND estado_turno != 'cancelado' ORDER BY created_at DESC LIMIT 1) as turno_fecha,
+      (SELECT hora_inicio FROM turnos WHERE lead_id = l.id AND estado_turno != 'cancelado' ORDER BY created_at DESC LIMIT 1) as turno_hora,
+      (SELECT estado_turno FROM turnos WHERE lead_id = l.id AND estado_turno != 'cancelado' ORDER BY created_at DESC LIMIT 1) as turno_estado
     FROM leads l
     LEFT JOIN users u ON l.asignado_a = u.id
     WHERE l.estado NOT IN ('pedido_confirmado', 'perdido')
@@ -71,6 +76,11 @@ export default async function LeadsPage() {
     total_consultas: Number(l.total_consultas || 0),
     total_pedidos: Number(l.total_pedidos || 0),
     pagos_count: Number(l.pagos_count || 0),
+    // 🆕 Información de turnos
+    tiene_turno: Number(l.tiene_turno || 0) > 0,
+    turno_fecha: l.turno_fecha ? String(l.turno_fecha) : null,
+    turno_hora: l.turno_hora ? String(l.turno_hora) : null,
+    turno_estado: l.turno_estado ? String(l.turno_estado) : null,
     // Otros
     asignado_a: l.asignado_a ? String(l.asignado_a) : null,
     asignado_nombre: l.asignado_nombre || null,
