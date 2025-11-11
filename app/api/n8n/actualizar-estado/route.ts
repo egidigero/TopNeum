@@ -165,7 +165,26 @@ export async function POST(request: NextRequest) {
       WHERE id = ${lead_id}
     `
 
+    // Obtener datos recolectados de lead_consultas
+    const consultaActual = await sql`
+      SELECT 
+        tipo_vehiculo,
+        medida_neumatico,
+        marca_preferida
+      FROM lead_consultas 
+      WHERE lead_id = ${lead_id}
+      ORDER BY created_at DESC
+      LIMIT 1
+    `
+
+    const datosRecolectados = consultaActual.length > 0 ? {
+      tipo_vehiculo: consultaActual[0].tipo_vehiculo,
+      medida_neumatico: consultaActual[0].medida_neumatico,
+      marca_preferida: consultaActual[0].marca_preferida
+    } : {}
+
     console.log('[n8n-estado] ✅ Estado actualizado:', leadActualizado[0])
+    console.log('[n8n-estado] 📊 Datos recolectados:', datosRecolectados)
 
     return NextResponse.json({
       success: true,
@@ -176,6 +195,7 @@ export async function POST(request: NextRequest) {
       codigo_confirmacion: leadActualizado[0].codigo_confirmacion, // 🆕 CÓDIGO para agendar turno
       nombre_cliente: leadActualizado[0].nombre_cliente,
       region: leadActualizado[0].region,
+      datos_recolectados: datosRecolectados, // 🆕 Datos del cliente
       timestamp: new Date().toISOString()
     })
 
