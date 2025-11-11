@@ -46,6 +46,78 @@ export async function GET() {
     } catch (e: any) {
       console.log('⚠️ Error en migración 010:', e.message)
     }
+
+    // Migración 011: Refactorizar estados y campos de producto
+    try {
+      // 1. Actualizar constraint de estados
+      await sql`ALTER TABLE leads DROP CONSTRAINT IF EXISTS leads_estado_check`
+      await sql`
+        ALTER TABLE leads ADD CONSTRAINT leads_estado_check 
+        CHECK (estado IN ('nuevo', 'en_conversacion', 'cotizado', 'esperando_pago', 'pago_informado', 'pedido_confirmado', 'perdido'))
+      `
+      console.log('✅ Migración 011: actualizados estados de leads')
+      
+      // 2. Agregar nuevos campos a lead_pedidos
+      await sql`
+        ALTER TABLE lead_pedidos 
+        ADD COLUMN IF NOT EXISTS producto_descripcion TEXT,
+        ADD COLUMN IF NOT EXISTS forma_pago_detalle TEXT
+      `
+      console.log('✅ Migración 011: agregados producto_descripcion y forma_pago_detalle')
+      
+      // 3. Migrar datos existentes
+      await sql`
+        UPDATE lead_pedidos 
+        SET producto_descripcion = 
+          CASE 
+            WHEN producto_elegido_marca IS NOT NULL THEN
+              CONCAT_WS(' ', 
+                producto_elegido_marca,
+                producto_elegido_modelo,
+                producto_elegido_medida,
+                producto_elegido_diseno
+              )
+            ELSE NULL
+          END
+        WHERE producto_elegido_marca IS NOT NULL AND producto_descripcion IS NULL
+      `
+      console.log('✅ Migración 011: migrados datos de producto')
+      
+      // 4. Agregar estado_turno a turnos
+      await sql`
+        ALTER TABLE turnos 
+        ADD COLUMN IF NOT EXISTS estado_turno VARCHAR(50) DEFAULT 'pendiente'
+      `
+      await sql`ALTER TABLE turnos DROP CONSTRAINT IF EXISTS turnos_estado_turno_check`
+      await sql`
+        ALTER TABLE turnos ADD CONSTRAINT turnos_estado_turno_check 
+        CHECK (estado_turno IN ('pendiente', 'confirmado', 'completado', 'cancelado'))
+      `
+      console.log('✅ Migración 011: agregado estado_turno a turnos')
+      
+      // 5. Migrar estados existentes
+      await sql`
+        UPDATE turnos 
+        SET estado_turno = 
+          CASE 
+            WHEN estado = 'confirmado' THEN 'confirmado'
+            WHEN estado = 'completado' THEN 'completado'
+            WHEN estado = 'cancelado' THEN 'cancelado'
+            ELSE 'pendiente'
+          END
+        WHERE estado_turno = 'pendiente'
+      `
+      console.log('✅ Migración 011: migrados estados de turnos')
+      
+      // 6. Crear índices
+      await sql`CREATE INDEX IF NOT EXISTS idx_leads_estado ON leads(estado)`
+      await sql`CREATE INDEX IF NOT EXISTS idx_turnos_estado_turno ON turnos(estado_turno)`
+      await sql`CREATE INDEX IF NOT EXISTS idx_lead_pedidos_lead_id ON lead_pedidos(lead_id)`
+      console.log('✅ Migración 011: creados índices')
+      
+    } catch (e: any) {
+      console.log('⚠️ Error en migración 011:', e.message)
+    }
     
     return NextResponse.json({ 
       success: true, 
