@@ -163,14 +163,9 @@ async function procesarDatosAdicionales(
         values.nombre_cliente = datos.nombre_cliente
       }
       if (datos.region) {
-        updates.push('region = $region')
-        values.region = datos.region
-      }
-      
-      if (updates.length > 0) {
         await sql`
           UPDATE leads
-          SET ${sql.raw(updates.join(', '))}
+          SET region = ${datos.region}
           WHERE id = ${lead_id}
         `
       }

@@ -5,8 +5,19 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
-import { X, Phone, MessageSquare, ShoppingCart } from "lucide-react"
+import { X, Phone, MessageSquare, ShoppingCart, Trash2 } from "lucide-react"
 import type { User as AuthUser } from "@/lib/auth"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 interface LeadDetailPanelProps {
   lead: {
@@ -36,12 +47,14 @@ interface LeadDetailPanelProps {
   currentUser: AuthUser
   onClose: () => void
   onUpdate: (updates: any) => void
+  onDelete?: () => void
 }
 
-export function LeadDetailPanel({ lead, users, currentUser, onClose, onUpdate }: LeadDetailPanelProps) {
+export function LeadDetailPanel({ lead, users, currentUser, onClose, onUpdate, onDelete }: LeadDetailPanelProps) {
   const [notas, setNotas] = useState(lead.notas || "")
   const [pagos, setPagos] = useState<any[]>([])
   const [loadingPagos, setLoadingPagos] = useState(true)
+  const [deleting, setDeleting] = useState(false)
 
   useEffect(() => {
     async function fetchPagos() {
@@ -69,8 +82,27 @@ export function LeadDetailPanel({ lead, users, currentUser, onClose, onUpdate }:
     onUpdate({ estado: nuevoEstado, ultimo_contacto_at: new Date().toISOString() })
   }
 
-  const handleAsignar = async (userId: string) => {
-    onUpdate({ asignado_a: userId })
+  const handleDelete = async () => {
+    if (!onDelete) return
+    
+    setDeleting(true)
+    try {
+      const res = await fetch(`/api/leads/${lead.id}`, {
+        method: 'DELETE',
+      })
+
+      if (res.ok) {
+        onDelete()
+        onClose()
+      } else {
+        alert('Error al eliminar el lead')
+      }
+    } catch (error) {
+      console.error('Error al eliminar:', error)
+      alert('Error al eliminar el lead')
+    } finally {
+      setDeleting(false)
+    }
   }
 
   const openWhatsApp = () => {
@@ -194,23 +226,6 @@ export function LeadDetailPanel({ lead, users, currentUser, onClose, onUpdate }:
             </div>
           </div>
 
-          {/* Asignación */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-300">Asignado a</label>
-            <select
-              value={lead.asignado_a || ""}
-              onChange={(e) => handleAsignar(e.target.value)}
-              className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm"
-            >
-              <option value="">Sin asignar</option>
-              {users.map((user) => (
-                <option key={user.id} value={user.id}>
-                  {user.nombre}
-                </option>
-              ))}
-            </select>
-          </div>
-
           {/* Estado */}
           <div className="space-y-2">
             <label className="text-sm font-medium text-slate-300">Cambiar estado</label>
@@ -308,6 +323,42 @@ export function LeadDetailPanel({ lead, users, currentUser, onClose, onUpdate }:
               <ShoppingCart className="w-4 h-4 mr-2" />
               Crear Pedido
             </Button>
+          )}
+
+          {/* Eliminar Lead */}
+          {onDelete && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  className="w-full border-red-700 text-red-500 hover:bg-red-900/20 hover:text-red-400"
+                  disabled={deleting}
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Eliminar Lead
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent className="bg-slate-900 border-slate-800">
+                <AlertDialogHeader>
+                  <AlertDialogTitle className="text-white">¿Eliminar lead?</AlertDialogTitle>
+                  <AlertDialogDescription className="text-slate-400">
+                    Esta acción no se puede deshacer. Se eliminará el lead <strong>{lead.nombre}</strong> y todos sus datos asociados (consultas, pedidos, pagos).
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel className="bg-slate-800 border-slate-700 text-white hover:bg-slate-700">
+                    Cancelar
+                  </AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleDelete}
+                    className="bg-red-600 hover:bg-red-700 text-white"
+                    disabled={deleting}
+                  >
+                    {deleting ? "Eliminando..." : "Eliminar"}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           )}
         </CardContent>
       </Card>

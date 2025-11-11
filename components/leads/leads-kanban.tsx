@@ -107,6 +107,12 @@ export function LeadsKanban({ leads: initialLeads, users, currentUser }: LeadsKa
     }
   }
 
+  function handleDeleteLead() {
+    if (!selectedLead) return
+    setLeads((prev) => prev.filter((l) => l.id !== selectedLead.id))
+    setSelectedLead(null)
+  }
+
   return (
     <div className="flex gap-6">
       <div className="flex-1 min-w-0">
@@ -191,6 +197,7 @@ export function LeadsKanban({ leads: initialLeads, users, currentUser }: LeadsKa
           currentUser={currentUser}
           onClose={() => setSelectedLead(null)}
           onUpdate={(updates) => handleUpdateLead(selectedLead.id, updates)}
+          onDelete={handleDeleteLead}
         />
       )}
     </div>
