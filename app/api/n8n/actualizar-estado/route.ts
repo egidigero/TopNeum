@@ -112,6 +112,8 @@ export async function POST(request: NextRequest) {
 
     // Guardar información del cliente en lead_consultas
     if (tipo_vehiculo || medida_neumatico || marca_preferida) {
+      console.log('[n8n-estado] 💾 Guardando datos del cliente:', { tipo_vehiculo, medida_neumatico, marca_preferida })
+      
       // Obtener consulta existente o crear nueva
       const consultaExistente = await sql`
         SELECT id FROM lead_consultas 
@@ -121,20 +123,38 @@ export async function POST(request: NextRequest) {
       `
 
       if (consultaExistente.length > 0) {
-        // Actualizar consulta existente
-        const updates: string[] = []
-        if (tipo_vehiculo) updates.push(`tipo_vehiculo = '${tipo_vehiculo}'`)
-        if (medida_neumatico) updates.push(`medida_neumatico = '${medida_neumatico}'`)
-        if (marca_preferida) updates.push(`marca_preferida = '${marca_preferida}'`)
-
-        if (updates.length > 0) {
-          await sql.unsafe(`
-            UPDATE lead_consultas 
-            SET ${updates.join(', ')}
-            WHERE id = '${consultaExistente[0].id}'
-          `)
-        }
+        console.log('[n8n-estado] 🔄 Actualizando consulta existente:', consultaExistente[0].id)
+        
+        // Actualizar consulta existente - construir query dinámicamente
+        const consultaId = consultaExistente[0].id
+        
+        // Obtener valores actuales
+        const consultaActualQuery = await sql`
+          SELECT tipo_vehiculo, medida_neumatico, marca_preferida 
+          FROM lead_consultas 
+          WHERE id = ${consultaId}
+        `
+        const consultaActual = consultaActualQuery[0]
+        
+        // Merge: mantener valores existentes, actualizar solo los nuevos
+        const nuevoTipoVehiculo = tipo_vehiculo || consultaActual.tipo_vehiculo
+        const nuevaMedida = medida_neumatico || consultaActual.medida_neumatico
+        const nuevaMarca = marca_preferida || consultaActual.marca_preferida
+        
+        await sql`
+          UPDATE lead_consultas 
+          SET 
+            tipo_vehiculo = ${nuevoTipoVehiculo},
+            medida_neumatico = ${nuevaMedida},
+            marca_preferida = ${nuevaMarca},
+            updated_at = NOW()
+          WHERE id = ${consultaId}
+        `
+        
+        console.log('[n8n-estado] ✅ Consulta actualizada')
       } else {
+        console.log('[n8n-estado] 🆕 Creando nueva consulta')
+        
         // Crear nueva consulta
         await sql`
           INSERT INTO lead_consultas (lead_id, tipo_vehiculo, medida_neumatico, marca_preferida)
@@ -145,6 +165,8 @@ export async function POST(request: NextRequest) {
             ${marca_preferida || null}
           )
         `
+        
+        console.log('[n8n-estado] ✅ Consulta creada')
       }
     }
 
