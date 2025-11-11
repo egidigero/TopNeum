@@ -163,27 +163,20 @@ export async function POST(request: NextRequest) {
     })
 
     // Generar mensaje formateado para WhatsApp
-    let mensajeFormateado = `🔍 Encontramos ${productosFormateados.length} opciones para ${medida_neumatico}\n\n`
+    let mensajeFormateado = `Claro! Para la medida ${medida_neumatico} te puedo ofrecer las siguientes opciones:\n\n`
 
     productosFormateados.slice(0, 5).forEach((p, i) => {
       const precioContado = region === "CABA" ? p.precio_contado_caba : p.precio_contado_interior
-      const totalContado = precioContado * 4
-      const total3 = p.precio_3_cuotas * 4
-      const total6 = p.precio_6_cuotas * 4
-      const total12 = p.precio_12_cuotas * 4
-
-      mensajeFormateado += `━━━━━━━━━━━━━━━━━━━━━━\n`
-      mensajeFormateado += `🏆 OPCIÓN ${i + 1} - ${p.marca} ${p.familia}${p.diseno ? ' ' + p.diseno : ''}\n`
-      mensajeFormateado += `━━━━━━━━━━━━━━━━━━━━━━\n`
-      mensajeFormateado += `📦 Stock: ${p.stock > 0 ? 'Disponible' : 'Consultar'}\n`
-      mensajeFormateado += `💳 3 cuotas: $${p.precio_3_cuotas.toLocaleString('es-AR')} (Total: $${total3.toLocaleString('es-AR')})\n`
-      mensajeFormateado += `💳 6 cuotas: $${p.precio_6_cuotas.toLocaleString('es-AR')} (Total: $${total6.toLocaleString('es-AR')})\n`
-      mensajeFormateado += `💳 12 cuotas: $${p.precio_12_cuotas.toLocaleString('es-AR')} (Total: $${total12.toLocaleString('es-AR')})\n`
-      mensajeFormateado += `💵 PROMO CONTADO ${region}: $${precioContado.toLocaleString('es-AR')}\n`
-      mensajeFormateado += `   (Total 4 cubiertas: $${totalContado.toLocaleString('es-AR')}) ⭐\n\n`
+      const titulo = `${p.medida} ${p.familia}${p.diseno ? ' ' + p.diseno : ''} ${p.marca.toUpperCase()}`
+      
+      mensajeFormateado += `**${titulo}**\n\n`
+      mensajeFormateado += `- 3 CUOTAS SIN INTERÉS: $${p.precio_3_cuotas.toLocaleString('es-AR')}\n`
+      mensajeFormateado += `- PROMO CONTADO: $${precioContado.toLocaleString('es-AR')}\n\n`
     })
 
-    mensajeFormateado += `💡 ¿Cuál te interesa? También te puedo dar más info sobre cada marca.`
+    mensajeFormateado += `✅ Todos incluyen envío gratis a todo el país (llevando 2 o más).\n`
+    mensajeFormateado += `� Consultá por 6 y 12 cuotas.\n`
+    mensajeFormateado += `�️ 5 años de garantía oficial de fábrica.`
 
     return NextResponse.json({
       productos: productosFormateados,
