@@ -152,80 +152,58 @@ async function procesarDatosAdicionales(
 ) {
   console.log('[procesarDatosAdicionales] Lead:', lead_id, 'Estado:', estado, 'Datos:', datos)
 
-  // SIEMPRE actualizar campos del lead si vienen en datos
-  const camposActualizar: any = {}
-  
-  if (datos.nombre_cliente) camposActualizar.nombre_cliente = datos.nombre_cliente
-  if (datos.region) camposActualizar.region = datos.region
-  if (datos.tipo_vehiculo) camposActualizar.tipo_vehiculo = datos.tipo_vehiculo
-  if (datos.medida_neumatico) camposActualizar.medida_neumatico = datos.medida_neumatico
-  if (datos.marca_preferida) camposActualizar.marca_preferida = datos.marca_preferida
-
-  // Actualizar lead con la info recolectada
-  if (Object.keys(camposActualizar).length > 0) {
-    const setClauses = Object.keys(camposActualizar).map(key => `${key} = $${key}`).join(', ')
-    console.log('[procesarDatosAdicionales] Actualizando lead con:', camposActualizar)
+  // SIEMPRE actualizar campos básicos del lead si vienen en datos
+  try {
+    if (datos.nombre_cliente) {
+      await sql`
+        UPDATE leads
+        SET nombre_cliente = ${datos.nombre_cliente}
+        WHERE id = ${lead_id}
+      `
+      console.log('[procesarDatosAdicionales] ✅ Actualizado nombre_cliente')
+    }
     
+    if (datos.region) {
+      await sql`
+        UPDATE leads
+        SET region = ${datos.region}
+        WHERE id = ${lead_id}
+      `
+      console.log('[procesarDatosAdicionales] ✅ Actualizado region')
+    }
+  } catch (err) {
+    console.error('[procesarDatosAdicionales] Error actualizando lead básico:', err)
+  }
+
+  // Guardar en lead_consultas si hay info de producto
+  if (datos.tipo_vehiculo || datos.medida_neumatico || datos.marca_preferida) {
     try {
-      // Construir query dinámicamente
-      const updates = []
-      const values: any = { lead_id }
-      
-      if (datos.nombre_cliente) {
-        updates.push('nombre_cliente = $nombre_cliente')
-        values.nombre_cliente = datos.nombre_cliente
-      }
-      if (datos.region) {
-        await sql`
-          UPDATE leads
-          SET region = ${datos.region}
-          WHERE id = ${lead_id}
-        `
-      }
+      await sql`
+        INSERT INTO lead_consultas (
+          lead_id,
+          medida_neumatico,
+          marca_preferida,
+          tipo_vehiculo,
+          tipo_uso
+        )
+        VALUES (
+          ${lead_id},
+          ${datos.medida_neumatico || null},
+          ${datos.marca_preferida || null},
+          ${datos.tipo_vehiculo || null},
+          ${datos.tipo_uso || null}
+        )
+      `
+      console.log('[procesarDatosAdicionales] ✅ Guardado en lead_consultas')
     } catch (err) {
-      console.error('[procesarDatosAdicionales] Error actualizando lead:', err)
+      console.error('[procesarDatosAdicionales] Error guardando consulta:', err)
     }
   }
 
   // Procesar según el estado específico
   switch (estado) {
-    case 'conversacion_iniciada':
-      // Guardar info inicial del cliente
-      if (datos.nombre_cliente) {
-        await sql`
-          UPDATE leads
-          SET nombre_cliente = ${datos.nombre_cliente}
-          WHERE id = ${lead_id}
-        `
-      }
-      break
-
     case 'consulta_producto':
-      // Registrar consulta
-      if (datos.medida_neumatico || datos.tipo_vehiculo) {
-        await sql`
-          INSERT INTO lead_consultas (
-            lead_id, 
-            medida_neumatico, 
-            marca_preferida, 
-            tipo_vehiculo, 
-            tipo_uso
-          )
-          VALUES (
-            ${lead_id}, 
-            ${datos.medida_neumatico || null}, 
-            ${datos.marca_preferida || null}, 
-            ${datos.tipo_vehiculo || null}, 
-            ${datos.tipo_uso || null}
-          )
-          ON CONFLICT (lead_id) DO UPDATE SET
-            medida_neumatico = COALESCE(EXCLUDED.medida_neumatico, lead_consultas.medida_neumatico),
-            marca_preferida = COALESCE(EXCLUDED.marca_preferida, lead_consultas.marca_preferida),
-            tipo_vehiculo = COALESCE(EXCLUDED.tipo_vehiculo, lead_consultas.tipo_vehiculo),
-            tipo_uso = COALESCE(EXCLUDED.tipo_uso, lead_consultas.tipo_uso),
-            updated_at = NOW()
-        `
-      }
+      // Ya se guardó en lead_consultas arriba
       break
 
     case 'cotizacion_enviada':
