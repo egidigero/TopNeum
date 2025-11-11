@@ -40,8 +40,8 @@ export default async function DashboardPage() {
             <Package className="w-4 h-4 text-blue-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-slate-900">0</div>
-            <p className="text-xs text-slate-500 mt-1">En catálogo</p>
+            <div className="text-2xl font-bold text-slate-900">{Number(productos_activos)}</div>
+            <p className="text-xs text-slate-500 mt-1">Con stock disponible</p>
           </CardContent>
         </Card>
 
@@ -51,19 +51,19 @@ export default async function DashboardPage() {
             <Users className="w-4 h-4 text-green-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-slate-900">0</div>
+            <div className="text-2xl font-bold text-slate-900">{Number(leads_activos)}</div>
             <p className="text-xs text-slate-500 mt-1">En seguimiento</p>
           </CardContent>
         </Card>
 
         <Card className="bg-white border-slate-200 shadow-sm hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-slate-600">Pedidos Pendientes</CardTitle>
-            <ShoppingCart className="w-4 h-4 text-purple-600" />
+            <CardTitle className="text-sm font-medium text-slate-600">En Proceso de Pago</CardTitle>
+            <TrendingUp className="w-4 h-4 text-orange-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-slate-900">0</div>
-            <p className="text-xs text-slate-500 mt-1">Por preparar</p>
+            <div className="text-2xl font-bold text-slate-900">{Number(leads_en_proceso)}</div>
+            <p className="text-xs text-slate-500 mt-1">Esperando confirmación</p>
           </CardContent>
         </Card>
 
@@ -73,8 +73,30 @@ export default async function DashboardPage() {
             <DollarSign className="w-4 h-4 text-amber-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-slate-900">0</div>
+            <div className="text-2xl font-bold text-slate-900">{Number(pagos_pendientes)}</div>
             <p className="text-xs text-slate-500 mt-1">Por verificar</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-white border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-slate-600">Pedidos Pendientes</CardTitle>
+            <ShoppingCart className="w-4 h-4 text-purple-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-slate-900">{Number(pedidos_pendientes)}</div>
+            <p className="text-xs text-slate-500 mt-1">Por preparar</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-white border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-slate-600">Turnos Próximos</CardTitle>
+            <Calendar className="w-4 h-4 text-cyan-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-slate-900">{Number(turnos_proximos)}</div>
+            <p className="text-xs text-slate-500 mt-1">Desde hoy</p>
           </CardContent>
         </Card>
       </div>
