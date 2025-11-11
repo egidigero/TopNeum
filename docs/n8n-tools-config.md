@@ -97,7 +97,9 @@ Body Content Type: JSON
 {
   "telefono_whatsapp": "={{$json.telefono_whatsapp}}",
   "nuevo_estado": "={{$json.nuevo_estado}}",
-  "datos_adicionales": "={{$json.datos_adicionales}}"
+  "tipo_vehiculo": "={{$json.tipo_vehiculo}}",
+  "medida_neumatico": "={{$json.medida_neumatico}}",
+  "marca_preferida": "={{$json.marca_preferida}}"
 }
 ```
 
@@ -111,32 +113,69 @@ Body Content Type: JSON
 4. **Send Body:** ✅ Activar toggle
 5. **Body Content Type:** `JSON`
 6. **Specify Body:** `Using Fields Below`
-7. **Body Parameters:** Agregá estos 3 parámetros:
+7. **Body Parameters:** Agregá estos 5 parámetros:
    - **Name:** `telefono_whatsapp` / **Value:** `={{$json.telefono_whatsapp}}`
    - **Name:** `nuevo_estado` / **Value:** `={{$json.nuevo_estado}}`
-   - **Name:** `datos_adicionales` / **Value:** `={{$json.datos_adicionales}}`
+   - **Name:** `tipo_vehiculo` / **Value:** `={{$json.tipo_vehiculo}}`
+   - **Name:** `medida_neumatico` / **Value:** `={{$json.medida_neumatico}}`
+   - **Name:** `marca_preferida` / **Value:** `={{$json.marca_preferida}}`
 8. **Tool Name:** Cambiá el nombre del nodo a `actualizar_estado`
 9. **Description** (si existe el campo): `Actualiza estado del lead en CRM. Crea lead si no existe. Devuelve código de confirmación.`
 
 **Nota:** Esta herramienta requiere autenticación. Asegurate de configurar el Bearer Token correctamente.
 
-### Ejemplo de datos_adicionales
+### ⚠️ IMPORTANTE: Enviar solo NUEVOS datos
 
+**NO repetir datos anteriores**. El sistema acumula automáticamente. Solo envía el campo que el cliente acaba de proporcionar:
+
+**❌ INCORRECTO:**
 ```json
 {
-  "medida_neumatico": "205/55R16",
-  "marca_preferida": "HANKOOK",
-  "producto_elegido": {
-    "marca": "HANKOOK",
-    "modelo": "OPTIMO H426",
-    "medida": "205/55R16"
-  },
-  "forma_pago": "transferencia_sin_factura",
-  "cantidad": 4,
-  "total": 96000,
-  "tipo_entrega": "colocacion",
-  "comprobante_enviado": true
+  "telefono_whatsapp": "5491112345678",
+  "nuevo_estado": "cotizacion_producto",
+  "tipo_vehiculo": "Gol Trend",        // Ya estaba guardado
+  "medida_neumatico": "185/60R15"      // Recién lo dijo
 }
+```
+
+**✅ CORRECTO:**
+```json
+{
+  "telefono_whatsapp": "5491112345678",
+  "nuevo_estado": "cotizacion_producto",
+  "medida_neumatico": "185/60R15"      // Solo el nuevo dato
+}
+```
+
+### Ejemplo de flujo de recolección
+
+**1ra llamada** - Cliente: "Tengo un Gol Trend"
+```json
+{
+  "telefono_whatsapp": "5491112345678",
+  "nuevo_estado": "consulta_producto",
+  "tipo_vehiculo": "Gol Trend"
+}
+```
+
+**2da llamada** - Cliente: "La medida es 185/60R15"
+```json
+{
+  "telefono_whatsapp": "5491112345678",
+  "nuevo_estado": "cotizacion_producto",
+  "medida_neumatico": "185/60R15"
+}
+// El sistema YA tiene tipo_vehiculo="Gol Trend", no repetir
+```
+
+**3ra llamada** - Cliente: "Me gustan los Pirelli"
+```json
+{
+  "telefono_whatsapp": "5491112345678",
+  "nuevo_estado": "cotizacion_producto",
+  "marca_preferida": "Pirelli"
+}
+// El sistema YA tiene tipo_vehiculo y medida_neumatico, no repetir
 ```
 
 ### Response Format

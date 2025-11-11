@@ -25,6 +25,11 @@ export async function POST(request: NextRequest) {
       telefono_whatsapp, 
       nuevo_estado, 
       cambiado_por = 'agente_llm',
+      // Campos específicos del cliente
+      tipo_vehiculo,
+      medida_neumatico,
+      marca_preferida,
+      // Campos de pedido (legacy - mantener por compatibilidad)
       datos_adicionales 
     } = body
 
@@ -45,7 +50,9 @@ export async function POST(request: NextRequest) {
       telefono_whatsapp, 
       nuevo_estado,
       cambiado_por,
-      datos_adicionales 
+      tipo_vehiculo,
+      medida_neumatico,
+      marca_preferida
     })
 
     // Validar teléfono
@@ -103,7 +110,45 @@ export async function POST(request: NextRequest) {
       VALUES (${lead_id}, ${estadoAnterior}, ${nuevo_estado}, ${cambiado_por})
     `
 
-    // Procesar datos adicionales según el estado
+    // Guardar información del cliente en lead_consultas
+    if (tipo_vehiculo || medida_neumatico || marca_preferida) {
+      // Obtener consulta existente o crear nueva
+      const consultaExistente = await sql`
+        SELECT id FROM lead_consultas 
+        WHERE lead_id = ${lead_id} 
+        ORDER BY created_at DESC 
+        LIMIT 1
+      `
+
+      if (consultaExistente.length > 0) {
+        // Actualizar consulta existente
+        const updates: string[] = []
+        if (tipo_vehiculo) updates.push(`tipo_vehiculo = '${tipo_vehiculo}'`)
+        if (medida_neumatico) updates.push(`medida_neumatico = '${medida_neumatico}'`)
+        if (marca_preferida) updates.push(`marca_preferida = '${marca_preferida}'`)
+
+        if (updates.length > 0) {
+          await sql.unsafe(`
+            UPDATE lead_consultas 
+            SET ${updates.join(', ')}
+            WHERE id = '${consultaExistente[0].id}'
+          `)
+        }
+      } else {
+        // Crear nueva consulta
+        await sql`
+          INSERT INTO lead_consultas (lead_id, tipo_vehiculo, medida_neumatico, marca_preferida)
+          VALUES (
+            ${lead_id},
+            ${tipo_vehiculo || null},
+            ${medida_neumatico || null},
+            ${marca_preferida || null}
+          )
+        `
+      }
+    }
+
+    // Procesar datos adicionales según el estado (legacy - mantener por compatibilidad)
     if (datos_adicionales) {
       await procesarDatosAdicionales(lead_id, nuevo_estado, datos_adicionales)
     }
