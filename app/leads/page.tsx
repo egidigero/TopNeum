@@ -31,6 +31,11 @@ export default async function LeadsPage() {
       -- Datos adicionales de pedidos
       (SELECT forma_pago FROM lead_pedidos WHERE lead_id = l.id ORDER BY created_at DESC LIMIT 1) as forma_pago,
       (SELECT total FROM lead_pedidos WHERE lead_id = l.id ORDER BY created_at DESC LIMIT 1) as ultimo_total,
+      -- 🆕 Datos del producto elegido
+      (SELECT producto_descripcion FROM lead_pedidos WHERE lead_id = l.id ORDER BY created_at DESC LIMIT 1) as producto_descripcion,
+      (SELECT forma_pago_detalle FROM lead_pedidos WHERE lead_id = l.id ORDER BY created_at DESC LIMIT 1) as forma_pago_detalle,
+      (SELECT cantidad_total FROM lead_pedidos WHERE lead_id = l.id ORDER BY created_at DESC LIMIT 1) as cantidad,
+      (SELECT precio_final FROM lead_pedidos WHERE lead_id = l.id ORDER BY created_at DESC LIMIT 1) as precio_final,
       -- Contadores
       (SELECT COUNT(*) FROM lead_consultas WHERE lead_id = l.id) as total_consultas,
       (SELECT COUNT(*) FROM lead_pedidos WHERE lead_id = l.id) as total_pedidos,
@@ -56,6 +61,11 @@ export default async function LeadsPage() {
     tipo_uso: l.tipo_uso || null,
     forma_pago: l.forma_pago || null,
     ultimo_total: l.ultimo_total ? Number(l.ultimo_total) : null,
+    // 🆕 Producto elegido
+    producto_descripcion: l.producto_descripcion || null,
+    forma_pago_detalle: l.forma_pago_detalle || null,
+    cantidad: l.cantidad ? Number(l.cantidad) : null,
+    precio_final: l.precio_final ? Number(l.precio_final) : null,
     ultima_medida: l.medida_neumatico || null, // Alias para compatibilidad
     // Contadores
     total_consultas: Number(l.total_consultas || 0),

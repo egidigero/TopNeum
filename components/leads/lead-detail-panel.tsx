@@ -42,6 +42,11 @@ interface LeadDetailPanelProps {
     forma_pago?: string | null
     ultimo_total?: number | null
     region?: string
+    // 🆕 Producto elegido (campos nuevos)
+    producto_descripcion?: string | null
+    forma_pago_detalle?: string | null
+    cantidad?: number | null
+    precio_final?: number | null
   }
   users: Array<{ id: string; nombre: string; role: string }>
   currentUser: AuthUser
@@ -226,6 +231,72 @@ export function LeadDetailPanel({ lead, users, currentUser, onClose, onUpdate, o
             </div>
           </div>
 
+          {/* 🆕 Detalle de Compra - Solo si hay producto elegido */}
+          {(lead.producto_descripcion || lead.precio_final) && (
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-emerald-400 flex items-center gap-2">
+                <ShoppingCart className="w-4 h-4" />
+                Detalle de Compra
+              </label>
+              <div className="bg-emerald-950 border border-emerald-800 rounded-lg p-3 space-y-3">
+                {lead.producto_descripcion && (
+                  <div>
+                    <div className="text-xs text-emerald-400 mb-1">Producto elegido:</div>
+                    <div className="text-sm text-white font-semibold">{lead.producto_descripcion}</div>
+                  </div>
+                )}
+                
+                {lead.cantidad && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-emerald-300">Cantidad:</span>
+                    <span className="text-white font-medium">{lead.cantidad} unidades</span>
+                  </div>
+                )}
+
+                {lead.precio_final && (
+                  <div className="flex justify-between text-sm pt-2 border-t border-emerald-800">
+                    <span className="text-emerald-300 font-semibold">TOTAL:</span>
+                    <span className="text-white font-bold text-lg">{formatPrice(lead.precio_final)}</span>
+                  </div>
+                )}
+
+                {lead.forma_pago_detalle && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-emerald-300">Forma de pago:</span>
+                    <span className="text-white font-medium">{lead.forma_pago_detalle}</span>
+                  </div>
+                )}
+
+                {/* 🆕 Botón Confirmar Pago - Solo si está en "pago_informado" */}
+                {lead.estado === 'pago_informado' && (
+                  <Button
+                    onClick={() => handleChangeEstado('pedido_confirmado')}
+                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white mt-2"
+                  >
+                    ✅ Confirmar Pago
+                  </Button>
+                )}
+
+                {/* Badge del estado del pedido */}
+                {lead.estado === 'esperando_pago' && (
+                  <Badge variant="outline" className="border-amber-500 text-amber-400 w-full justify-center">
+                    ⏳ Esperando pago del cliente
+                  </Badge>
+                )}
+                {lead.estado === 'pago_informado' && (
+                  <Badge variant="outline" className="border-blue-500 text-blue-400 w-full justify-center">
+                    💬 Cliente informó pago - Confirmar
+                  </Badge>
+                )}
+                {lead.estado === 'pedido_confirmado' && (
+                  <Badge variant="outline" className="border-emerald-500 text-emerald-400 w-full justify-center">
+                    ✅ Pago confirmado
+                  </Badge>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Estado */}
           <div className="space-y-2">
             <label className="text-sm font-medium text-slate-300">Cambiar estado</label>
@@ -233,10 +304,10 @@ export function LeadDetailPanel({ lead, users, currentUser, onClose, onUpdate, o
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => handleChangeEstado("contactado")}
+                onClick={() => handleChangeEstado("en_conversacion")}
                 className="border-slate-700 text-slate-300 bg-transparent text-xs"
               >
-                Contactado
+                En Conversación
               </Button>
               <Button
                 size="sm"
@@ -257,8 +328,24 @@ export function LeadDetailPanel({ lead, users, currentUser, onClose, onUpdate, o
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => handleChangeEstado("perdido")}
+                onClick={() => handleChangeEstado("pago_informado")}
                 className="border-slate-700 text-slate-300 bg-transparent text-xs"
+              >
+                Pago Informado
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => handleChangeEstado("pedido_confirmado")}
+                className="border-emerald-700 text-emerald-300 bg-transparent text-xs"
+              >
+                Pedido Confirmado
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => handleChangeEstado("perdido")}
+                className="border-red-700 text-red-300 bg-transparent text-xs"
               >
                 Perdido
               </Button>
