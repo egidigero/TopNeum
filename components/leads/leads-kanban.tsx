@@ -27,16 +27,24 @@ interface Lead {
   region: string
   estado: LeadEstado
   whatsapp_label: string
-  ultima_medida: string | null
+  // Datos recolectados
+  medida_neumatico: string | null
+  marca_preferida: string | null
+  tipo_vehiculo: string | null
+  tipo_uso: string | null
+  forma_pago: string | null
+  ultimo_total: number | null
+  // Contadores
   total_consultas: number
   total_pedidos: number
+  pagos_count: number
+  // Asignación y seguimiento
   asignado_a: string | null
   asignado_nombre: string | null
   ultima_interaccion: string | null
   created_at: string
   origen: string
   ultimo_contacto_at: string | null
-  pagos_count: number
   mensaje_inicial: string
   notas: string | null
 }

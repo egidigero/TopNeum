@@ -22,6 +22,15 @@ interface LeadDetailPanelProps {
     ultimo_contacto_at: string | null
     notas: string | null
     created_at: string
+    whatsapp_label: string
+    // Datos recolectados
+    medida_neumatico?: string | null
+    marca_preferida?: string | null
+    tipo_vehiculo?: string | null
+    tipo_uso?: string | null
+    forma_pago?: string | null
+    ultimo_total?: number | null
+    region?: string
   }
   users: Array<{ id: string; nombre: string; role: string }>
   currentUser: AuthUser
@@ -106,10 +115,15 @@ export function LeadDetailPanel({ lead, users, currentUser, onClose, onUpdate }:
 
           {/* Info */}
           <div className="space-y-2">
-            <div className="flex items-center gap-2 text-sm">
+            <div className="flex items-center gap-2 text-sm flex-wrap">
               <Badge variant="secondary" className="bg-slate-800 text-slate-300">
                 {lead.canal}
               </Badge>
+              {lead.whatsapp_label && (
+                <Badge variant="secondary" className="bg-slate-800 text-slate-300">
+                  {lead.whatsapp_label}
+                </Badge>
+              )}
               {lead.origen && (
                 <Badge variant="outline" className="border-slate-700 text-slate-400">
                   {lead.origen}
@@ -126,6 +140,58 @@ export function LeadDetailPanel({ lead, users, currentUser, onClose, onUpdate }:
                 <p className="text-sm text-slate-300">{lead.mensaje_inicial}</p>
               </div>
             )}
+          </div>
+
+          {/* Datos del Cliente */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-slate-300">Información Recolectada</label>
+            <div className="bg-slate-800 rounded-lg p-3 space-y-2">
+              {lead.tipo_vehiculo && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-400">Vehículo:</span>
+                  <span className="text-white font-medium">{lead.tipo_vehiculo}</span>
+                </div>
+              )}
+              {lead.medida_neumatico && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-400">Medida:</span>
+                  <span className="text-white font-medium">{lead.medida_neumatico}</span>
+                </div>
+              )}
+              {lead.marca_preferida && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-400">Marca Preferida:</span>
+                  <span className="text-white font-medium">{lead.marca_preferida}</span>
+                </div>
+              )}
+              {lead.tipo_uso && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-400">Uso:</span>
+                  <span className="text-white font-medium">{lead.tipo_uso}</span>
+                </div>
+              )}
+              {lead.forma_pago && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-400">Forma de Pago:</span>
+                  <span className="text-white font-medium">{lead.forma_pago}</span>
+                </div>
+              )}
+              {lead.ultimo_total && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-400">Último Total:</span>
+                  <span className="text-white font-medium">{formatPrice(lead.ultimo_total)}</span>
+                </div>
+              )}
+              {lead.region && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-400">Región:</span>
+                  <span className="text-white font-medium">{lead.region}</span>
+                </div>
+              )}
+              {!lead.tipo_vehiculo && !lead.medida_neumatico && !lead.marca_preferida && !lead.forma_pago && (
+                <p className="text-sm text-slate-500 italic">No hay información recolectada aún</p>
+              )}
+            </div>
           </div>
 
           {/* Asignación */}

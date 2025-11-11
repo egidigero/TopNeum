@@ -23,8 +23,15 @@ export default async function LeadsPage() {
       l.updated_at,
       l.origen,
       u.nombre as asignado_nombre,
-      -- Datos adicionales
-      (SELECT medida_neumatico FROM lead_consultas WHERE lead_id = l.id ORDER BY created_at DESC LIMIT 1) as ultima_medida,
+      -- Datos adicionales de consultas
+      (SELECT medida_neumatico FROM lead_consultas WHERE lead_id = l.id ORDER BY created_at DESC LIMIT 1) as medida_neumatico,
+      (SELECT marca_preferida FROM lead_consultas WHERE lead_id = l.id ORDER BY created_at DESC LIMIT 1) as marca_preferida,
+      (SELECT tipo_vehiculo FROM lead_consultas WHERE lead_id = l.id ORDER BY created_at DESC LIMIT 1) as tipo_vehiculo,
+      (SELECT tipo_uso FROM lead_consultas WHERE lead_id = l.id ORDER BY created_at DESC LIMIT 1) as tipo_uso,
+      -- Datos adicionales de pedidos
+      (SELECT forma_pago FROM lead_pedidos WHERE lead_id = l.id ORDER BY created_at DESC LIMIT 1) as forma_pago,
+      (SELECT total FROM lead_pedidos WHERE lead_id = l.id ORDER BY created_at DESC LIMIT 1) as ultimo_total,
+      -- Contadores
       (SELECT COUNT(*) FROM lead_consultas WHERE lead_id = l.id) as total_consultas,
       (SELECT COUNT(*) FROM lead_pedidos WHERE lead_id = l.id) as total_pedidos,
       (SELECT COUNT(*) FROM lead_pedidos WHERE lead_id = l.id AND estado_pago IN ('pagado', 'sena_recibida')) as pagos_count
@@ -42,18 +49,27 @@ export default async function LeadsPage() {
     estado: String(l.estado || 'conversacion_iniciada') as "conversacion_iniciada" | "consulta_producto" | "cotizacion_enviada" | "en_proceso_de_pago" | "pagado" | "turno_pendiente" | "turno_agendado" | "abandonado",
     region: String(l.region || 'INTERIOR'),
     whatsapp_label: String(l.whatsapp_label || 'en caliente'),
-    ultima_medida: l.ultima_medida || null,
+    // Datos adicionales
+    medida_neumatico: l.medida_neumatico || null,
+    marca_preferida: l.marca_preferida || null,
+    tipo_vehiculo: l.tipo_vehiculo || null,
+    tipo_uso: l.tipo_uso || null,
+    forma_pago: l.forma_pago || null,
+    ultimo_total: l.ultimo_total ? Number(l.ultimo_total) : null,
+    ultima_medida: l.medida_neumatico || null, // Alias para compatibilidad
+    // Contadores
     total_consultas: Number(l.total_consultas || 0),
     total_pedidos: Number(l.total_pedidos || 0),
+    pagos_count: Number(l.pagos_count || 0),
+    // Otros
     asignado_a: l.asignado_a ? String(l.asignado_a) : null,
     asignado_nombre: l.asignado_nombre || null,
     ultima_interaccion: l.ultima_interaccion || null,
     created_at: String(l.created_at),
     origen: String(l.origen || 'whatsapp'),
-    ultimo_contacto_at: l.ultima_interaccion || null, // Usar ultima_interaccion en lugar de ultimo_contacto_at
-    pagos_count: Number(l.pagos_count || 0),
-    mensaje_inicial: '', // No existe en nueva tabla
-    notas: null, // No existe en nueva tabla
+    ultimo_contacto_at: l.ultima_interaccion || null,
+    mensaje_inicial: '',
+    notas: null,
   }))
 
   // Fetch users for assignment
