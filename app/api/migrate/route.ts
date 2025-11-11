@@ -49,6 +49,21 @@ export async function GET() {
 
     // Migración 011: Refactorizar estados y campos de producto
     try {
+      // PASO 0: Primero corregir los estados legacy ANTES de agregar el constraint
+      console.log('📝 Migración 011.0: Corrigiendo estados legacy...')
+      await sql`UPDATE leads SET estado = 'nuevo' WHERE estado IN ('contacto_inicial', 'nuevo_contacto')`
+      await sql`UPDATE leads SET estado = 'en_conversacion' WHERE estado IN ('conversacion_iniciada', 'en_consulta')`
+      await sql`UPDATE leads SET estado = 'cotizado' WHERE estado IN ('consulta_producto', 'cotizacion_enviada')`
+      await sql`UPDATE leads SET estado = 'esperando_pago' WHERE estado IN ('en_proceso_de_pago', 'esperando_confirmacion')`
+      await sql`UPDATE leads SET estado = 'pago_informado' WHERE estado IN ('pago_pendiente_confirmacion')`
+      await sql`UPDATE leads SET estado = 'pedido_confirmado' WHERE estado IN ('pedido_finalizado', 'venta_confirmada', 'confirmado')`
+      await sql`UPDATE leads SET estado = 'perdido' WHERE estado IN ('abandonado', 'no_interesado', 'perdido_contacto')`
+      await sql`
+        UPDATE leads SET estado = 'nuevo' 
+        WHERE estado NOT IN ('nuevo', 'en_conversacion', 'cotizado', 'esperando_pago', 'pago_informado', 'pedido_confirmado', 'perdido')
+      `
+      console.log('✅ Migración 011.0: Estados legacy corregidos')
+      
       // 1. Actualizar constraint de estados
       await sql`ALTER TABLE leads DROP CONSTRAINT IF EXISTS leads_estado_check`
       await sql`
@@ -117,27 +132,6 @@ export async function GET() {
       
     } catch (e: any) {
       console.log('⚠️ Error en migración 011:', e.message)
-    }
-
-    // Migración 012: Corregir estados legacy existentes
-    try {
-      // Mapear estados antiguos a nuevos
-      await sql`UPDATE leads SET estado = 'nuevo' WHERE estado IN ('contacto_inicial', 'nuevo_contacto')`
-      await sql`UPDATE leads SET estado = 'en_conversacion' WHERE estado IN ('conversacion_iniciada', 'en_consulta')`
-      await sql`UPDATE leads SET estado = 'cotizado' WHERE estado IN ('consulta_producto', 'cotizacion_enviada')`
-      await sql`UPDATE leads SET estado = 'esperando_pago' WHERE estado IN ('en_proceso_de_pago', 'esperando_confirmacion')`
-      await sql`UPDATE leads SET estado = 'pago_informado' WHERE estado IN ('pago_pendiente_confirmacion')`
-      await sql`UPDATE leads SET estado = 'pedido_confirmado' WHERE estado IN ('pedido_finalizado', 'venta_confirmada', 'confirmado')`
-      await sql`UPDATE leads SET estado = 'perdido' WHERE estado IN ('abandonado', 'no_interesado', 'perdido_contacto')`
-      
-      // Cualquier estado no mapeado va a 'nuevo'
-      await sql`
-        UPDATE leads SET estado = 'nuevo' 
-        WHERE estado NOT IN ('nuevo', 'en_conversacion', 'cotizado', 'esperando_pago', 'pago_informado', 'pedido_confirmado', 'perdido')
-      `
-      console.log('✅ Migración 012: corregidos estados legacy')
-    } catch (e: any) {
-      console.log('⚠️ Error en migración 012:', e.message)
     }
     
     return NextResponse.json({ 
