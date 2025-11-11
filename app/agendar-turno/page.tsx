@@ -10,12 +10,16 @@ import { Calendar, Clock, User, Phone, Mail, Car, MessageSquare } from "lucide-r
 import { useToast } from "@/hooks/use-toast"
 
 export default function AgendarTurnoPage() {
+  const [hasCode, setHasCode] = useState<boolean | null>(null)
+  const [codigo, setCodigo] = useState("")
+  const [leadData, setLeadData] = useState<any>(null)
   const [tipo, setTipo] = useState<"colocacion" | "retiro" | null>(null)
   const [fecha, setFecha] = useState<Date | undefined>()
   const [slots, setSlots] = useState<any[]>([])
   const [selectedSlot, setSelectedSlot] = useState<any>(null)
   const [loading, setLoading] = useState(false)
-  const [step, setStep] = useState(1)
+  const [error, setError] = useState("")
+  const [step, setStep] = useState(0) // 0 = código, 1 = tipo, 2 = fecha, etc
   
   const [formData, setFormData] = useState({
     nombre_cliente: "",
@@ -29,6 +33,52 @@ export default function AgendarTurnoPage() {
   })
 
   const { toast } = useToast()
+
+  const handleBuscarCodigo = async () => {
+    setLoading(true)
+    setError("")
+    
+    try {
+      const res = await fetch(`/api/leads/por-codigo?codigo=${codigo}`)
+      const data = await res.json()
+      
+      if (!res.ok) {
+        setError(data.error || "Código no encontrado")
+        setLoading(false)
+        return
+      }
+
+      if (data.turno_existente) {
+        setError(`Ya tenés un turno agendado para el ${data.turno_existente.fecha} a las ${data.turno_existente.hora_inicio}`)
+        setLoading(false)
+        return
+      }
+
+      // Autocompletar datos del lead
+      setLeadData(data)
+      setFormData({
+        nombre_cliente: data.lead.nombre || "",
+        telefono: data.lead.telefono || "",
+        email: data.lead.email || "",
+        marca_vehiculo: data.vehiculo?.tipo || "",
+        modelo_vehiculo: data.vehiculo?.tipo || "",
+        patente: "",
+        cantidad_neumaticos: data.pedido?.cantidad?.toString() || "4",
+        observaciones: "",
+      })
+      
+      setStep(1)
+    } catch (err: any) {
+      setError("Error al buscar el código")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleSkipCode = () => {
+    setHasCode(false)
+    setStep(1)
+  }
 
   const handleTipoSelect = (tipoSeleccionado: "colocacion" | "retiro") => {
     setTipo(tipoSeleccionado)
@@ -69,22 +119,43 @@ export default function AgendarTurnoPage() {
 
     setLoading(true)
     try {
-      const res = await fetch("/api/turnos", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...formData,
-          tipo,
-          fecha: fechaStr,
-          hora_inicio: selectedSlot.hora_inicio,
-          hora_fin: selectedSlot.hora_fin,
-          origen: "whatsapp",
-        }),
-      })
+      // Si tiene código, usar endpoint especial
+      if (leadData && codigo) {
+        const res = await fetch("/api/turnos/agendar-con-codigo", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            codigo: codigo,
+            fecha: fechaStr,
+            hora_inicio: selectedSlot.hora_inicio,
+            hora_fin: selectedSlot.hora_fin,
+            tipo,
+          })
+        })
 
-      if (!res.ok) {
-        const error = await res.json()
-        throw new Error(error.error || "Error al agendar turno")
+        if (!res.ok) {
+          const error = await res.json()
+          throw new Error(error.error || "Error al agendar turno")
+        }
+      } else {
+        // Sin código, usar endpoint normal
+        const res = await fetch("/api/turnos", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ...formData,
+            tipo,
+            fecha: fechaStr,
+            hora_inicio: selectedSlot.hora_inicio,
+            hora_fin: selectedSlot.hora_fin,
+            origen: "whatsapp",
+          }),
+        })
+
+        if (!res.ok) {
+          const error = await res.json()
+          throw new Error(error.error || "Error al agendar turno")
+        }
       }
 
       toast({ 
@@ -118,6 +189,103 @@ export default function AgendarTurnoPage() {
           <h1 className="text-4xl font-bold text-white mb-2">Agendar Turno</h1>
           <p className="text-slate-300">TopNeum - Colocación y Retiro de Neumáticos</p>
         </div>
+
+        {/* Step 0: ¿Tenés código? */}
+        {step === 0 && hasCode === null && (
+          <Card className="bg-slate-900/80 border-slate-700 p-8 mb-6">
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Calendar className="w-8 h-8 text-white" />
+              </div>
+              <h2 className="text-2xl font-bold text-white mb-2">¿Tenés un código de confirmación?</h2>
+              <p className="text-slate-400">Si ya hiciste tu pedido, te enviamos un código por WhatsApp</p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <Button
+                onClick={() => setHasCode(true)}
+                className="h-24 flex flex-col gap-2 bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                <MessageSquare className="w-6 h-6" />
+                <span>Sí, tengo código</span>
+              </Button>
+              <Button
+                onClick={handleSkipCode}
+                variant="outline"
+                className="h-24 flex flex-col gap-2 border-slate-600 text-slate-300 hover:bg-slate-800"
+              >
+                <Calendar className="w-6 h-6" />
+                <span>No, agendar igual</span>
+              </Button>
+            </div>
+          </Card>
+        )}
+
+        {/* Step 0b: Ingresar código */}
+        {step === 0 && hasCode === true && (
+          <Card className="bg-slate-900/80 border-slate-700 p-8 mb-6">
+            <Button
+              variant="ghost"
+              onClick={() => setHasCode(null)}
+              className="text-slate-400 hover:text-white mb-4"
+            >
+              ← Volver
+            </Button>
+
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <MessageSquare className="w-8 h-8 text-white" />
+              </div>
+              <h2 className="text-2xl font-bold text-white mb-2">Ingresá tu código</h2>
+              <p className="text-slate-400">El código que te enviamos por WhatsApp (6 caracteres)</p>
+            </div>
+
+            <div className="space-y-4">
+              <Input
+                type="text"
+                placeholder="ABC123"
+                value={codigo}
+                onChange={(e) => setCodigo(e.target.value.toUpperCase())}
+                className="text-center text-3xl font-bold tracking-wider bg-slate-800 border-slate-700 text-white h-16"
+                maxLength={6}
+              />
+
+              {error && (
+                <div className="p-3 bg-red-900/20 border border-red-700 rounded-lg text-red-400 text-sm">
+                  {error}
+                </div>
+              )}
+
+              {leadData && leadData.pedido && (
+                <div className="p-4 bg-green-900/20 border border-green-700 rounded-lg">
+                  <p className="text-green-400 text-sm mb-2">✅ Código válido - Datos encontrados:</p>
+                  <div className="text-slate-300 text-sm space-y-1">
+                    <p><strong>Producto:</strong> {leadData.pedido.producto.marca} {leadData.pedido.producto.modelo}</p>
+                    <p><strong>Medida:</strong> {leadData.pedido.producto.medida}</p>
+                    <p><strong>Cantidad:</strong> {leadData.pedido.cantidad} unidades</p>
+                    <p><strong>Precio:</strong> ${leadData.pedido.precio_final?.toLocaleString()}</p>
+                  </div>
+                </div>
+              )}
+
+              <Button
+                onClick={handleBuscarCodigo}
+                disabled={loading || codigo.length < 6}
+                className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white text-lg"
+              >
+                {loading ? "Buscando..." : "Continuar"}
+              </Button>
+
+              <Button
+                onClick={handleSkipCode}
+                variant="ghost"
+                className="w-full text-slate-400 hover:text-white"
+              >
+                Agendar sin código
+              </Button>
+            </div>
+          </Card>
+        )}
 
         {/* Step 1: Seleccionar tipo */}
         {step >= 1 && (
