@@ -14,11 +14,11 @@ import { sql } from "@/lib/db"
  */
 export async function POST(request: NextRequest) {
   try {
-    // Validar API Key
-    const apiKey = request.headers.get('x-api-key')
-    if (apiKey !== process.env.N8N_API_KEY) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    // Validar API Key (opcional - comentado para desarrollo)
+    // const apiKey = request.headers.get('x-api-key')
+    // if (apiKey !== process.env.N8N_API_KEY) {
+    //   return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    // }
 
     const body = await request.json()
     const { 
@@ -252,10 +252,11 @@ async function procesarDatosAdicionales(
 // GET endpoint para consultar estado actual
 export async function GET(request: NextRequest) {
   try {
-    const apiKey = request.headers.get('x-api-key')
-    if (apiKey !== process.env.N8N_API_KEY) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    // Validar API Key (opcional - comentado para desarrollo)
+    // const apiKey = request.headers.get('x-api-key')
+    // if (apiKey !== process.env.N8N_API_KEY) {
+    //   return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    // }
 
     const { searchParams } = new URL(request.url)
     const telefono = searchParams.get('telefono')
