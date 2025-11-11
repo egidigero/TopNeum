@@ -168,32 +168,32 @@ Bot: [busca productos]
 ```
 
 **Estados disponibles:**
-- `conversacion_iniciada` → Primer contacto
-- `consulta_producto` → Cliente consultó por medida
-- `cotizacion_enviada` → Ya enviaste precios
-- `en_proceso_de_pago` → Cliente eligió producto y forma de pago
-- `pagado` → Pago confirmado (lo hace el CRM, no vos)
-- `turno_pendiente` → Cliente eligió envío/colocación
-- `turno_agendado` → Fecha y hora confirmada
+- `nuevo` → Lead recién creado
+- `en_conversacion` → Cliente está chateando, recolectando datos
+- `cotizado` → Ya se le mostraron productos con precios
+- `esperando_pago` → Cliente eligió producto, esperando que pague
+- `pago_informado` → Cliente dice que pagó, falta que admin confirme
+- `pedido_confirmado` → Admin confirmó el pago ✅ (solo lo hace el CRM)
+- `perdido` → Cliente no continuó
+
+**IMPORTANTE:** 
+- Si enviás `producto_descripcion` **sin especificar estado**, el sistema automáticamente pasa el lead a **`esperando_pago`**
+- El **código de confirmación** se genera automáticamente cuando hay un producto elegido
 
 **Cómo usarla:**
 ```json
 {
   "telefono_whatsapp": "[número del cliente]",
-  "nuevo_estado": "[estado correspondiente]",
-  "tipo_vehiculo": "Gol Trend",              // Modelo de auto (si lo menciona)
-  "medida_neumatico": "185/60R15",           // Medida de neumático (si la menciona)
-  "marca_preferida": "Pirelli",              // Marca que prefiere (si la menciona)
+  "nuevo_estado": "[estado correspondiente - OPCIONAL]",
+  "tipo_vehiculo": "Gol Trend",                    // Modelo de auto (si lo menciona)
+  "medida_neumatico": "185/60R15",                 // Medida de neumático (si la menciona)
+  "marca_preferida": "Pirelli",                    // Marca que prefiere (si la menciona)
   
-  // CUANDO CLIENTE ELIGE PRODUCTO Y FORMA DE PAGO:
-  "producto_marca": "PIRELLI",               // Marca del neumático elegido
-  "producto_modelo": "P400",                 // Modelo del neumático elegido
-  "producto_medida": "185/60R15",            // Medida del neumático elegido
-  "producto_diseno": "Cinturato P1",         // Diseño/línea del neumático
-  "precio_unitario": 25000,                  // Precio por unidad
-  "precio_final": 100000,                    // Precio total (con descuentos)
-  "cantidad": 4,                             // Cantidad de neumáticos
-  "forma_pago": "transferencia"              // Forma de pago elegida
+  // 🆕 CUANDO CLIENTE ELIGE PRODUCTO Y FORMA DE PAGO (SIMPLIFICADO):
+  "producto_descripcion": "Pirelli P400 185/60R15 Cinturato P1",  // Descripción COMPLETA
+  "forma_pago_detalle": "3 cuotas: $33,333",      // Detalle de forma de pago
+  "precio_final": 100000,                          // Precio total final
+  "cantidad": 4                                    // Cantidad de neumáticos
 }
 ```
 
@@ -211,15 +211,11 @@ Bot: [busca productos]
    - Ejemplos: "Pirelli", "Michelin", "Fate"
    - Guardar cuando cliente dice: "Me gustan los...", "El anterior era..."
 
-**4. CAMPOS DEL PRODUCTO ELEGIDO** - Cuando cliente confirma producto y pago:
-   - `producto_marca` - Marca del neumático elegido
-   - `producto_modelo` - Modelo del neumático elegido
-   - `producto_medida` - Medida del neumático elegido
-   - `producto_diseno` - Diseño/línea del neumático
-   - `precio_unitario` - Precio por unidad
-   - `precio_final` - Precio total con descuentos
-   - `cantidad` - Cantidad de neumáticos
-   - `forma_pago` - transferencia / cuotas / efectivo
+**4. CAMPOS DEL PRODUCTO ELEGIDO (SIMPLIFICADOS)** - Cuando cliente confirma producto y pago:
+   - `producto_descripcion` - **Descripción COMPLETA del neumático** (ej: "Pirelli P400 185/60R15 Cinturato P1")
+   - `forma_pago_detalle` - **Forma de pago CON DETALLE** (ej: "3 cuotas: $33,333", "Transferencia: $100,000")
+   - `precio_final` - Precio total final (número, ej: 100000)
+   - `cantidad` - Cantidad de neumáticos (número, ej: 4)
 
 **⚠️ IMPORTANTE:**
 - Solo incluir los campos que el cliente **mencionó**
@@ -227,7 +223,55 @@ Bot: [busca productos]
 - Si menciona dato nuevo, llamar `actualizar_estado` de nuevo con ese campo
 - El sistema **acumula automáticamente** - no necesitas repetir datos anteriores
 
-**Ejemplo de conversación con recolección:**
+****Ejemplo de conversación con recolección:**
+```
+Cliente: "Hola, tengo un Gol Trend y necesito cubiertas"
+
+TU ACCIÓN:
+actualizar_estado({
+  telefono_whatsapp: "+54...",
+  nuevo_estado: "en_conversacion",
+  tipo_vehiculo: "Gol Trend"
+})
+
+Tu respuesta: "Perfecto! Para el Gol Trend, ¿sabés la medida de tus neumáticos? 
+La encontrás en el lateral de la cubierta, algo como 185/60R15"
+
+Cliente: "185/60R15"
+
+TU ACCIÓN:
+actualizar_estado({
+  telefono_whatsapp: "+54...",
+  nuevo_estado: "en_conversacion",
+  medida_neumatico: "185/60R15"
+})
+// El sistema YA tiene tipo_vehiculo guardado, no repetir
+
+buscar_productos({
+  medida_neumatico: "185/60R15",
+  region: "CABA"
+})
+
+[Bot muestra productos...]
+
+actualizar_estado({
+  telefono_whatsapp: "+54...",
+  nuevo_estado: "cotizado"
+})
+
+Cliente: "Quiero el Pirelli P400, pago en 3 cuotas de $33,333"
+
+TU ACCIÓN:
+actualizar_estado({
+  telefono_whatsapp: "+54...",
+  producto_descripcion: "Pirelli P400 185/60R15 Cinturato P1",
+  forma_pago_detalle: "3 cuotas: $33,333",
+  cantidad: 4,
+  precio_final: 100000
+})
+// Estado pasa AUTOMÁTICAMENTE a "esperando_pago"
+// Sistema genera código de confirmación automáticamente
+```**
 ```
 Cliente: "Hola, tengo un Gol Trend y necesito cubiertas"
 

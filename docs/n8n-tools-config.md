@@ -70,7 +70,7 @@ Body Content Type: JSON
 
 ### Información Básica
 - **Nombre:** `actualizar_estado`
-- **Descripción:** `Actualiza el estado de un lead en el CRM de TopNeum. Crea el lead automáticamente si es la primera interacción. Devuelve código de confirmación cuando el lead está en estado 'a_confirmar_pago' o posterior.`
+- **Descripción:** `Actualiza el estado de un lead en el CRM de TopNeum. Crea el lead automáticamente si es la primera interacción. Devuelve código de confirmación para agendar turno cuando el cliente elige un producto.`
 
 ### Configuración HTTP Request
 
@@ -99,7 +99,11 @@ Body Content Type: JSON
   "nuevo_estado": "={{$json.nuevo_estado}}",
   "tipo_vehiculo": "={{$json.tipo_vehiculo}}",
   "medida_neumatico": "={{$json.medida_neumatico}}",
-  "marca_preferida": "={{$json.marca_preferida}}"
+  "marca_preferida": "={{$json.marca_preferida}}",
+  "producto_descripcion": "={{$json.producto_descripcion}}",
+  "forma_pago_detalle": "={{$json.forma_pago_detalle}}",
+  "cantidad": "={{$json.cantidad}}",
+  "precio_final": "={{$json.precio_final}}"
 }
 ```
 
@@ -113,50 +117,65 @@ Body Content Type: JSON
 4. **Send Body:** ✅ Activar toggle
 5. **Body Content Type:** `JSON`
 6. **Specify Body:** `Using Fields Below`
-7. **Body Parameters:** Agregá estos 13 parámetros:
+7. **Body Parameters:** Agregá estos 9 parámetros:
    
-   **Datos del cliente (enviar cuando el cliente los menciona):**
+   **Datos del cliente (siempre requeridos):**
    - **Name:** `telefono_whatsapp` / **Value:** `={{$json.telefono_whatsapp}}`
    - **Name:** `nuevo_estado` / **Value:** `={{$json.nuevo_estado}}`
+   
+   **Datos del vehículo (opcionales - cuando el cliente los menciona):**
    - **Name:** `tipo_vehiculo` / **Value:** `={{$json.tipo_vehiculo}}`
    - **Name:** `medida_neumatico` / **Value:** `={{$json.medida_neumatico}}`
    - **Name:** `marca_preferida` / **Value:** `={{$json.marca_preferida}}`
    
-   **Datos del producto elegido (enviar cuando el cliente elige producto y forma de pago):**
-   - **Name:** `producto_marca` / **Value:** `={{$json.producto_marca}}`
-   - **Name:** `producto_modelo` / **Value:** `={{$json.producto_modelo}}`
-   - **Name:** `producto_medida` / **Value:** `={{$json.producto_medida}}`
-   - **Name:** `producto_diseno` / **Value:** `={{$json.producto_diseno}}`
-   - **Name:** `precio_unitario` / **Value:** `={{$json.precio_unitario}}`
-   - **Name:** `precio_final` / **Value:** `={{$json.precio_final}}`
+   **Datos del producto elegido (opcionales - cuando el cliente confirma compra):**
+   - **Name:** `producto_descripcion` / **Value:** `={{$json.producto_descripcion}}`
+   - **Name:** `forma_pago_detalle` / **Value:** `={{$json.forma_pago_detalle}}`
    - **Name:** `cantidad` / **Value:** `={{$json.cantidad}}`
-   - **Name:** `forma_pago` / **Value:** `={{$json.forma_pago}}`
+   - **Name:** `precio_final` / **Value:** `={{$json.precio_final}}`
 
 8. **Tool Name:** Cambiá el nombre del nodo a `actualizar_estado`
-9. **Description** (si existe el campo): `Actualiza estado del lead en CRM. Crea lead si no existe. Devuelve código de confirmación.`
+9. **Description** (si existe el campo): `Actualiza estado del lead en CRM. Acumula datos automáticamente.`
 
 **Nota:** Esta herramienta requiere autenticación. Asegurate de configurar el Bearer Token correctamente.
 
 ### 📋 Descripción de cada parámetro
 
 **Parámetros siempre requeridos:**
-- `telefono_whatsapp`: Número del cliente en formato internacional
-- `nuevo_estado`: Estado del lead (consulta_producto, en_proceso_de_pago, etc)
+- `telefono_whatsapp`: Número del cliente en formato internacional (ej: "+5491112345678")
+- `nuevo_estado`: Estado del lead (ver lista de estados válidos más abajo)
 
-**Parámetros del cliente (opcionales - solo si el cliente los menciona):**
-- `tipo_vehiculo`: Modelo del auto (ej: "Gol Trend", "Corsa")
-- `medida_neumatico`: Medida del neumático (ej: "185/60R15")
-- `marca_preferida`: Marca que prefiere (ej: "Pirelli", "Fate")
+**Parámetros del vehículo (opcionales - solo cuando el cliente los menciona):**
+- `tipo_vehiculo`: Modelo del auto (ej: "Gol Trend", "Corsa", "Ecosport")
+- `medida_neumatico`: Medida del neumático (ej: "185/60R15", "205/55R16")
+- `marca_preferida`: Marca preferida (ej: "Pirelli", "Fate", "Hankook")
 
 **Parámetros del producto elegido (opcionales - solo cuando cliente confirma compra):**
-- `producto_marca`: Marca del neumático elegido (ej: "PIRELLI")
-- `producto_modelo`: Modelo del neumático (ej: "P400")
-- `producto_medida`: Medida del neumático (ej: "185/60R15")
-- `producto_diseno`: Diseño/línea del neumático (ej: "Cinturato P1")
-- `precio_unitario`: Precio por unidad (número, ej: 25000)
-- `precio_final`: Precio total con descuentos (número, ej: 100000)
-- `cantidad`: Cantidad de neumáticos (número, ej: 4)
-- `forma_pago`: Forma de pago (ej: "transferencia", "cuotas", "efectivo")
+- `producto_descripcion`: **Descripción completa del neumático** (ej: "Pirelli P400 185/60R15 Cinturato P1")
+- `forma_pago_detalle`: **Detalle de la forma de pago** (ej: "3 cuotas: $33,333", "Transferencia: $100,000", "Efectivo: $96,000")
+- `cantidad`: Cantidad de neumáticos (número, ej: 4, 2)
+- `precio_final`: Precio total final (número, ej: 100000, 96000)
+
+---
+
+### 🔄 Estados Válidos del Lead
+
+El sistema tiene un flujo de estados bien definido:
+
+1. **`nuevo`** - Lead recién creado, aún no interactuó
+2. **`en_conversacion`** - Cliente está chateando, pidiendo info
+3. **`cotizado`** - Ya se le pasó la lista de productos con precios
+4. **`esperando_pago`** - Cliente eligió producto, esperando que pague
+5. **`pago_informado`** - Cliente dice que pagó, falta confirmar
+6. **`pedido_confirmado`** - Admin confirmó el pago ✅
+7. **`perdido`** - Cliente no continuó con la compra
+
+**IMPORTANTE:** 
+- Si enviás `producto_descripcion` sin especificar `nuevo_estado`, el sistema automáticamente pasa el lead a **`esperando_pago`**
+- El **código de confirmación** se genera automáticamente cuando hay un producto elegido
+- Solo UN turno activo por cliente (no puede sacar 2 turnos simultáneos)
+
+---
 
 ### ⚠️ IMPORTANTE: Enviar solo NUEVOS datos
 
@@ -183,11 +202,11 @@ Body Content Type: JSON
 
 ### Ejemplo de flujo de recolección
 
-**1ra llamada** - Cliente: "Tengo un Gol Trend"
+**1ra llamada** - Cliente: "Hola, tengo un Gol Trend"
 ```json
 {
-  "telefono_whatsapp": "5491112345678",
-  "nuevo_estado": "consulta_producto",
+  "telefono_whatsapp": "+5491112345678",
+  "nuevo_estado": "en_conversacion",
   "tipo_vehiculo": "Gol Trend"
 }
 ```
@@ -195,37 +214,42 @@ Body Content Type: JSON
 **2da llamada** - Cliente: "La medida es 185/60R15"
 ```json
 {
-  "telefono_whatsapp": "5491112345678",
-  "nuevo_estado": "cotizacion_producto",
+  "telefono_whatsapp": "+5491112345678",
   "medida_neumatico": "185/60R15"
 }
-// El sistema YA tiene tipo_vehiculo="Gol Trend", no repetir
+// No repetir tipo_vehiculo, ya está guardado
+// nuevo_estado es opcional, se mantiene en "en_conversacion"
 ```
 
-**3ra llamada** - Cliente: "Me gustan los Pirelli"
+**3ra llamada** - Bot busca productos y se los muestra
 ```json
 {
-  "telefono_whatsapp": "5491112345678",
-  "nuevo_estado": "cotizacion_producto",
-  "marca_preferida": "Pirelli"
+  "telefono_whatsapp": "+5491112345678",
+  "nuevo_estado": "cotizado"
 }
-// El sistema YA tiene tipo_vehiculo y medida_neumatico, no repetir
+// Solo actualizar estado, datos de vehículo ya están guardados
 ```
 
-**4ta llamada** - Cliente: "Quiero el Pirelli P400, pago por transferencia"
+**4ta llamada** - Cliente: "Quiero el Pirelli P400 185/60R15 Cinturato P1, pago en 3 cuotas de $33,333"
 ```json
 {
-  "telefono_whatsapp": "5491112345678",
-  "nuevo_estado": "en_proceso_de_pago",
-  "producto_marca": "PIRELLI",
-  "producto_modelo": "P400",
-  "producto_medida": "185/60R15",
-  "precio_unitario": 25000,
-  "precio_final": 100000,
+  "telefono_whatsapp": "+5491112345678",
+  "producto_descripcion": "Pirelli P400 185/60R15 Cinturato P1",
+  "forma_pago_detalle": "3 cuotas: $33,333",
   "cantidad": 4,
-  "forma_pago": "transferencia"
+  "precio_final": 100000
 }
-// Sistema guarda el producto elegido y genera código de confirmación
+// Estado pasa AUTOMÁTICAMENTE a "esperando_pago"
+// Sistema genera código de confirmación automáticamente
+```
+
+**5ta llamada** - Cliente: "Ya pagué, te mando el comprobante"
+```json
+{
+  "telefono_whatsapp": "+5491112345678",
+  "nuevo_estado": "pago_informado"
+}
+// Ahora aparece en el CRM para que admin confirme el pago
 ```
 
 ### Response Format
@@ -234,23 +258,26 @@ Body Content Type: JSON
 {
   "success": true,
   "lead_id": "uuid-del-lead",
-  "estado_anterior": "consulta_producto",
-  "estado_nuevo": "en_proceso_de_pago",
-  "codigo_confirmacion": "A3X7K9",
+  "estado_anterior": "en_conversacion",
+  "estado_nuevo": "esperando_pago",
+  "whatsapp_label": "Gol Trend - 185/60R15",
+  "codigo_confirmacion": "ABC123",
+  "nombre_cliente": "Juan Pérez",
+  "region": "CABA",
   "datos_recolectados": {
     "tipo_vehiculo": "Gol Trend",
     "medida_neumatico": "185/60R15",
-    "marca_preferida": "Pirelli"
+    "marca_preferida": null
   },
-  "mensaje": "Lead actualizado exitosamente",
-  "created": false
+  "timestamp": "2025-11-11T15:30:00Z"
 }
 ```
 
-**Nota:** 
-- Si `created: true`, significa que el lead fue creado por primera vez
-- `codigo_confirmacion` se usa para que el cliente agende su turno en la web
-- `datos_recolectados` muestra todos los datos acumulados del cliente
+**Campos importantes del response:**
+- `codigo_confirmacion`: El cliente usa este código para agendar turno en la web (https://top-neum-h5x5.vercel.app/agendar-turno)
+- `whatsapp_label`: Etiqueta automática para WhatsApp Business
+- `datos_recolectados`: Todos los datos acumulados del cliente
+- `estado_nuevo`: Estado final después de la actualización (puede ser auto-asignado si enviás `producto_descripcion`)
 
 ---
 
