@@ -25,6 +25,14 @@ interface Turno {
   observaciones?: string
   origen: string
   created_at: string
+  producto?: {
+    marca: string
+    modelo: string
+    medida: string
+    diseno: string
+    precio_unitario: number
+    precio_final: number
+  }
 }
 
 type ViewMode = "day" | "week" | "month"
@@ -403,16 +411,28 @@ function WeekView({
                       </div>
                     )}
                     
-                    <Badge 
-                      variant="outline" 
-                      className={`text-[10px] ${
-                        turno.tipo === 'colocacion'
-                          ? 'border-blue-600 text-blue-700'
-                          : 'border-green-600 text-green-700'
-                      }`}
-                    >
-                      {turno.tipo === 'colocacion' ? '🔧 Colocación' : '📦 Retiro'}
-                    </Badge>
+                    <div className="flex items-center gap-1 flex-wrap">
+                      <Badge 
+                        variant="outline" 
+                        className={`text-[10px] ${
+                          turno.tipo === 'colocacion'
+                            ? 'border-blue-600 text-blue-700'
+                            : 'border-green-600 text-green-700'
+                        }`}
+                      >
+                        {turno.tipo === 'colocacion' ? '🔧 Colocación' : '📦 Retiro'}
+                      </Badge>
+                      
+                      {turno.producto && (
+                        <Badge 
+                          variant="outline" 
+                          className="text-[10px] border-emerald-600 text-emerald-700 bg-emerald-50"
+                          title={`${turno.producto.marca} ${turno.producto.modelo} - $${turno.producto.precio_final.toLocaleString('es-AR')}`}
+                        >
+                          🛒 Comprado
+                        </Badge>
+                      )}
+                    </div>
                   </div>
                 ))
               )}

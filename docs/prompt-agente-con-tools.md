@@ -183,7 +183,17 @@ Bot: [busca productos]
   "nuevo_estado": "[estado correspondiente]",
   "tipo_vehiculo": "Gol Trend",              // Modelo de auto (si lo menciona)
   "medida_neumatico": "185/60R15",           // Medida de neumático (si la menciona)
-  "marca_preferida": "Pirelli"               // Marca que prefiere (si la menciona)
+  "marca_preferida": "Pirelli",              // Marca que prefiere (si la menciona)
+  
+  // CUANDO CLIENTE ELIGE PRODUCTO Y FORMA DE PAGO:
+  "producto_marca": "PIRELLI",               // Marca del neumático elegido
+  "producto_modelo": "P400",                 // Modelo del neumático elegido
+  "producto_medida": "185/60R15",            // Medida del neumático elegido
+  "producto_diseno": "Cinturato P1",         // Diseño/línea del neumático
+  "precio_unitario": 25000,                  // Precio por unidad
+  "precio_final": 100000,                    // Precio total (con descuentos)
+  "cantidad": 4,                             // Cantidad de neumáticos
+  "forma_pago": "transferencia"              // Forma de pago elegida
 }
 ```
 
@@ -200,6 +210,16 @@ Bot: [busca productos]
 3. **`marca_preferida`** - Marca que le gusta
    - Ejemplos: "Pirelli", "Michelin", "Fate"
    - Guardar cuando cliente dice: "Me gustan los...", "El anterior era..."
+
+**4. CAMPOS DEL PRODUCTO ELEGIDO** - Cuando cliente confirma producto y pago:
+   - `producto_marca` - Marca del neumático elegido
+   - `producto_modelo` - Modelo del neumático elegido
+   - `producto_medida` - Medida del neumático elegido
+   - `producto_diseno` - Diseño/línea del neumático
+   - `precio_unitario` - Precio por unidad
+   - `precio_final` - Precio total con descuentos
+   - `cantidad` - Cantidad de neumáticos
+   - `forma_pago` - transferencia / cuotas / efectivo
 
 **⚠️ IMPORTANTE:**
 - Solo incluir los campos que el cliente **mencionó**
@@ -330,12 +350,21 @@ RESPUESTA AL CLIENTE:
 Cliente: "Me interesa el Hankook, pago por transferencia sin factura"
 
 TU PROCESO INTERNO:
-1. Identificar producto: HANKOOK
+1. Identificar producto: HANKOOK OPTIMO H426 205/55R16
 2. Identificar pago: transferencia sin factura (precio contado)
 3. Calcular: 4 cubiertas × $24.000 = $96.000 (precio efectivo/transferencia)
 4. Llamar actualizar_estado({
      telefono_whatsapp: "+54 9 11 1234 5678",
      nuevo_estado: "en_proceso_de_pago",
+     // USAR ESTOS CAMPOS DIRECTOS:
+     producto_marca: "HANKOOK",
+     producto_modelo: "OPTIMO H426",
+     producto_medida: "205/55R16",
+     precio_unitario: 24000,
+     precio_final: 96000,
+     cantidad: 4,
+     forma_pago: "transferencia",
+     // También mantener datos_adicionales para compatibilidad:
      datos_adicionales: {
        producto_elegido: {
          marca: "HANKOOK",

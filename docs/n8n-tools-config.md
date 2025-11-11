@@ -113,16 +113,50 @@ Body Content Type: JSON
 4. **Send Body:** ✅ Activar toggle
 5. **Body Content Type:** `JSON`
 6. **Specify Body:** `Using Fields Below`
-7. **Body Parameters:** Agregá estos 5 parámetros:
+7. **Body Parameters:** Agregá estos 13 parámetros:
+   
+   **Datos del cliente (enviar cuando el cliente los menciona):**
    - **Name:** `telefono_whatsapp` / **Value:** `={{$json.telefono_whatsapp}}`
    - **Name:** `nuevo_estado` / **Value:** `={{$json.nuevo_estado}}`
    - **Name:** `tipo_vehiculo` / **Value:** `={{$json.tipo_vehiculo}}`
    - **Name:** `medida_neumatico` / **Value:** `={{$json.medida_neumatico}}`
    - **Name:** `marca_preferida` / **Value:** `={{$json.marca_preferida}}`
+   
+   **Datos del producto elegido (enviar cuando el cliente elige producto y forma de pago):**
+   - **Name:** `producto_marca` / **Value:** `={{$json.producto_marca}}`
+   - **Name:** `producto_modelo` / **Value:** `={{$json.producto_modelo}}`
+   - **Name:** `producto_medida` / **Value:** `={{$json.producto_medida}}`
+   - **Name:** `producto_diseno` / **Value:** `={{$json.producto_diseno}}`
+   - **Name:** `precio_unitario` / **Value:** `={{$json.precio_unitario}}`
+   - **Name:** `precio_final` / **Value:** `={{$json.precio_final}}`
+   - **Name:** `cantidad` / **Value:** `={{$json.cantidad}}`
+   - **Name:** `forma_pago` / **Value:** `={{$json.forma_pago}}`
+
 8. **Tool Name:** Cambiá el nombre del nodo a `actualizar_estado`
 9. **Description** (si existe el campo): `Actualiza estado del lead en CRM. Crea lead si no existe. Devuelve código de confirmación.`
 
 **Nota:** Esta herramienta requiere autenticación. Asegurate de configurar el Bearer Token correctamente.
+
+### 📋 Descripción de cada parámetro
+
+**Parámetros siempre requeridos:**
+- `telefono_whatsapp`: Número del cliente en formato internacional
+- `nuevo_estado`: Estado del lead (consulta_producto, en_proceso_de_pago, etc)
+
+**Parámetros del cliente (opcionales - solo si el cliente los menciona):**
+- `tipo_vehiculo`: Modelo del auto (ej: "Gol Trend", "Corsa")
+- `medida_neumatico`: Medida del neumático (ej: "185/60R15")
+- `marca_preferida`: Marca que prefiere (ej: "Pirelli", "Fate")
+
+**Parámetros del producto elegido (opcionales - solo cuando cliente confirma compra):**
+- `producto_marca`: Marca del neumático elegido (ej: "PIRELLI")
+- `producto_modelo`: Modelo del neumático (ej: "P400")
+- `producto_medida`: Medida del neumático (ej: "185/60R15")
+- `producto_diseno`: Diseño/línea del neumático (ej: "Cinturato P1")
+- `precio_unitario`: Precio por unidad (número, ej: 25000)
+- `precio_final`: Precio total con descuentos (número, ej: 100000)
+- `cantidad`: Cantidad de neumáticos (número, ej: 4)
+- `forma_pago`: Forma de pago (ej: "transferencia", "cuotas", "efectivo")
 
 ### ⚠️ IMPORTANTE: Enviar solo NUEVOS datos
 
@@ -178,6 +212,22 @@ Body Content Type: JSON
 // El sistema YA tiene tipo_vehiculo y medida_neumatico, no repetir
 ```
 
+**4ta llamada** - Cliente: "Quiero el Pirelli P400, pago por transferencia"
+```json
+{
+  "telefono_whatsapp": "5491112345678",
+  "nuevo_estado": "en_proceso_de_pago",
+  "producto_marca": "PIRELLI",
+  "producto_modelo": "P400",
+  "producto_medida": "185/60R15",
+  "precio_unitario": 25000,
+  "precio_final": 100000,
+  "cantidad": 4,
+  "forma_pago": "transferencia"
+}
+// Sistema guarda el producto elegido y genera código de confirmación
+```
+
 ### Response Format
 
 ```json
@@ -185,14 +235,22 @@ Body Content Type: JSON
   "success": true,
   "lead_id": "uuid-del-lead",
   "estado_anterior": "consulta_producto",
-  "estado_nuevo": "a_confirmar_pago",
+  "estado_nuevo": "en_proceso_de_pago",
   "codigo_confirmacion": "A3X7K9",
+  "datos_recolectados": {
+    "tipo_vehiculo": "Gol Trend",
+    "medida_neumatico": "185/60R15",
+    "marca_preferida": "Pirelli"
+  },
   "mensaje": "Lead actualizado exitosamente",
   "created": false
 }
 ```
 
-**Nota:** Si `created: true`, significa que el lead fue creado por primera vez.
+**Nota:** 
+- Si `created: true`, significa que el lead fue creado por primera vez
+- `codigo_confirmacion` se usa para que el cliente agende su turno en la web
+- `datos_recolectados` muestra todos los datos acumulados del cliente
 
 ---
 

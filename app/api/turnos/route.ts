@@ -11,25 +11,33 @@ export async function GET(request: NextRequest) {
 
     let query = sql`
       SELECT 
-        id,
-        nombre_cliente,
-        telefono,
-        email,
-        pedido_id,
-        tipo,
-        TO_CHAR(fecha, 'YYYY-MM-DD') as fecha,
-        TO_CHAR(hora_inicio, 'HH24:MI:SS') as hora_inicio,
-        TO_CHAR(hora_fin, 'HH24:MI:SS') as hora_fin,
-        marca_vehiculo,
-        modelo_vehiculo,
-        patente,
-        cantidad_neumaticos,
-        observaciones,
-        estado,
-        origen,
-        created_at,
-        updated_at
-      FROM turnos
+        t.id,
+        t.lead_id,
+        t.nombre_cliente,
+        t.telefono,
+        t.email,
+        t.pedido_id,
+        t.tipo,
+        TO_CHAR(t.fecha, 'YYYY-MM-DD') as fecha,
+        TO_CHAR(t.hora_inicio, 'HH24:MI:SS') as hora_inicio,
+        TO_CHAR(t.hora_fin, 'HH24:MI:SS') as hora_fin,
+        t.marca_vehiculo,
+        t.modelo_vehiculo,
+        t.patente,
+        t.cantidad_neumaticos,
+        t.observaciones,
+        t.estado,
+        t.origen,
+        t.created_at,
+        t.updated_at,
+        p.producto_elegido_marca,
+        p.producto_elegido_modelo,
+        p.producto_elegido_medida,
+        p.producto_elegido_diseno,
+        p.precio_unitario,
+        p.precio_final
+      FROM turnos t
+      LEFT JOIN lead_pedidos p ON t.lead_id = p.lead_id
       WHERE 1=1
     `
 
@@ -50,6 +58,7 @@ export async function GET(request: NextRequest) {
     // Convertir tipos explícitamente
     const turnos = turnosRaw.map((t: any) => ({
       id: String(t.id),
+      lead_id: t.lead_id || null,
       nombre_cliente: String(t.nombre_cliente || ''),
       telefono: String(t.telefono || ''),
       email: t.email || null,
@@ -67,6 +76,15 @@ export async function GET(request: NextRequest) {
       origen: String(t.origen || 'manual'),
       created_at: t.created_at,
       updated_at: t.updated_at,
+      // Datos del producto (si existen)
+      producto: t.producto_elegido_marca ? {
+        marca: t.producto_elegido_marca,
+        modelo: t.producto_elegido_modelo,
+        medida: t.producto_elegido_medida,
+        diseno: t.producto_elegido_diseno,
+        precio_unitario: t.precio_unitario,
+        precio_final: t.precio_final
+      } : null
     }))
 
     console.log('🔍 API Turnos GET - Total turnos:', turnos.length)

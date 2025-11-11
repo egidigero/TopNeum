@@ -25,6 +25,14 @@ interface Turno {
   observaciones?: string
   origen: string
   created_at: string
+  producto?: {
+    marca: string
+    modelo: string
+    medida: string
+    diseno: string
+    precio_unitario: number
+    precio_final: number
+  }
 }
 
 interface TurnoDetailModalProps {
@@ -163,6 +171,44 @@ export function TurnoDetailModal({ turno, open, onClose }: TurnoDetailModalProps
                   Cantidad de neumáticos: <span className="font-medium text-slate-900">{turno.cantidad_neumaticos}</span>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* Producto elegido por el cliente */}
+          {turno.producto && (
+            <div className="bg-emerald-50 rounded-lg p-4 space-y-3 border-2 border-emerald-200">
+              <h3 className="text-sm font-semibold text-emerald-900 mb-3 flex items-center gap-2">
+                🛒 Producto Comprado
+              </h3>
+              
+              <div className="space-y-2">
+                <div className="text-emerald-900">
+                  <span className="font-bold text-lg">
+                    {turno.producto.marca} {turno.producto.modelo}
+                  </span>
+                </div>
+                
+                <div className="flex items-center gap-4 text-sm text-emerald-800">
+                  <span className="font-medium">📏 {turno.producto.medida}</span>
+                  {turno.producto.diseno && (
+                    <span className="text-emerald-700">• {turno.producto.diseno}</span>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-between pt-2 border-t border-emerald-200">
+                  <span className="text-sm text-emerald-700">Precio unitario:</span>
+                  <span className="font-semibold text-emerald-900">
+                    ${turno.producto.precio_unitario.toLocaleString('es-AR')}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-emerald-800">TOTAL:</span>
+                  <span className="font-bold text-xl text-emerald-900">
+                    ${turno.producto.precio_final.toLocaleString('es-AR')}
+                  </span>
+                </div>
+              </div>
             </div>
           )}
 
