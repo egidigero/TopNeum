@@ -122,6 +122,7 @@ export async function POST(request: NextRequest) {
       observaciones,
       origen = "manual",
       pedido_id,
+      lead_id, // 🆕 Agregar lead_id
     } = body
 
     // Validar campos requeridos
@@ -130,6 +131,25 @@ export async function POST(request: NextRequest) {
         { error: "Faltan campos requeridos: nombre_cliente, telefono, tipo, fecha, hora_inicio, hora_fin" },
         { status: 400 }
       )
+    }
+
+    // 🆕 Si viene lead_id, validar que no tenga otro turno activo
+    if (lead_id) {
+      const turnoExistente = await sql`
+        SELECT id, fecha, hora_inicio, estado_turno 
+        FROM turnos
+        WHERE lead_id = ${lead_id}
+        AND estado_turno IN ('pendiente', 'confirmado')
+        LIMIT 1
+      `
+
+      if (turnoExistente.length > 0) {
+        const turno = turnoExistente[0]
+        return NextResponse.json({ 
+          error: `Este cliente ya tiene un turno agendado para el ${new Date(turno.fecha + 'T00:00:00').toLocaleDateString('es-AR')} a las ${turno.hora_inicio.substring(0, 5)}.`,
+          turno_existente: turno
+        }, { status: 409 })
+      }
     }
 
     // Verificar disponibilidad del slot
@@ -165,7 +185,9 @@ export async function POST(request: NextRequest) {
         observaciones,
         origen,
         pedido_id,
-        estado
+        lead_id,
+        estado,
+        estado_turno
       ) VALUES (
         ${nombre_cliente},
         ${telefono},
@@ -181,6 +203,8 @@ export async function POST(request: NextRequest) {
         ${observaciones || null},
         ${origen},
         ${pedido_id || null},
+        ${lead_id || null},
+        'pendiente',
         'pendiente'
       )
       RETURNING *

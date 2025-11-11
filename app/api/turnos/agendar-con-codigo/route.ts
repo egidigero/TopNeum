@@ -62,6 +62,23 @@ export async function POST(request: NextRequest) {
 
     const pedido = pedidoResult.length > 0 ? pedidoResult[0] : {}
 
+    // 🆕 Validar que el cliente no tenga otro turno activo
+    const turnoExistenteResult = await sql`
+      SELECT id, fecha, hora_inicio, estado_turno 
+      FROM turnos
+      WHERE lead_id = ${lead.id}
+      AND estado_turno IN ('pendiente', 'confirmado')
+      LIMIT 1
+    `
+
+    if (turnoExistenteResult.length > 0) {
+      const turnoExistente = turnoExistenteResult[0]
+      return NextResponse.json({ 
+        error: `Ya tenés un turno agendado para el ${new Date(turnoExistente.fecha + 'T00:00:00').toLocaleDateString('es-AR')} a las ${turnoExistente.hora_inicio.substring(0, 5)}. Completá o cancelá ese turno antes de agendar uno nuevo.`,
+        turno_existente: turnoExistente
+      }, { status: 409 })
+    }
+
     // Verificar disponibilidad del slot
     const conflictosResult = await sql`
       SELECT id FROM turnos

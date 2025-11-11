@@ -29,16 +29,18 @@ export async function POST(request: NextRequest) {
       tipo_vehiculo,
       medida_neumatico,
       marca_preferida,
-      // Campos del producto elegido
+      // 🆕 CAMPOS NUEVOS REFACTORIZADOS
+      producto_descripcion,  // Texto largo: "Pirelli P400 185/60R15 Cinturato P1"
+      forma_pago_detalle,    // Texto: "3 cuotas: $33,333" o "Transferencia: $100,000"
+      cantidad,
+      precio_final,
+      // Campos legacy (mantener por compatibilidad temporal)
       producto_marca,
       producto_modelo,
       producto_medida,
       producto_diseno,
       precio_unitario,
-      precio_final,
-      cantidad,
       forma_pago,
-      // Campos de pedido (legacy - mantener por compatibilidad)
       datos_adicionales 
     } = body
 
@@ -73,19 +75,16 @@ export async function POST(request: NextRequest) {
 
     // Validar estado
     const estadosValidos = [
-      'conversacion_iniciada',
-      'consulta_producto',
-      'cotizacion_enviada',
-      'en_proceso_de_pago',
-      'pagado',
-      'turno_pendiente',
-      'turno_agendado',
-      'pedido_enviado',
-      'pedido_finalizado',
-      'abandonado'
+      'nuevo',
+      'en_conversacion',
+      'cotizado',
+      'esperando_pago',
+      'pago_informado',
+      'pedido_confirmado',
+      'perdido'
     ]
 
-    if (!estadosValidos.includes(nuevo_estado)) {
+    if (nuevo_estado && !estadosValidos.includes(nuevo_estado)) {
       return NextResponse.json({ 
         error: `Estado inválido. Debe ser uno de: ${estadosValidos.join(', ')}` 
       }, { status: 400 })
@@ -103,21 +102,33 @@ export async function POST(request: NextRequest) {
     `
     const estadoAnterior = leadActual[0]?.estado
 
+    // 🆕 LÓGICA AUTOMÁTICA DE ESTADOS:
+    // Si llega producto_descripcion y no hay estado especificado → 'esperando_pago'
+    let estadoFinal = nuevo_estado
+    if (!nuevo_estado && producto_descripcion) {
+      estadoFinal = 'esperando_pago'
+      console.log('[n8n-estado] 🔄 Auto-estado: esperando_pago (producto confirmado)')
+    } else if (!nuevo_estado) {
+      estadoFinal = estadoAnterior // Mantener estado actual
+    }
+
     // Actualizar estado
     await sql`
       UPDATE leads
       SET 
-        estado = ${nuevo_estado},
+        estado = ${estadoFinal},
         updated_at = NOW(),
         ultima_interaccion = NOW()
       WHERE id = ${lead_id}
     `
 
     // Registrar en historial (el trigger lo hace automáticamente, pero lo hacemos explícito)
-    await sql`
-      INSERT INTO lead_historial (lead_id, estado_anterior, estado_nuevo, cambiado_por)
-      VALUES (${lead_id}, ${estadoAnterior}, ${nuevo_estado}, ${cambiado_por})
-    `
+    if (estadoFinal !== estadoAnterior) {
+      await sql`
+        INSERT INTO lead_historial (lead_id, estado_anterior, estado_nuevo, cambiado_por)
+        VALUES (${lead_id}, ${estadoAnterior}, ${estadoFinal}, ${cambiado_por})
+      `
+    }
 
     // Guardar información del cliente en lead_consultas
     if (tipo_vehiculo || medida_neumatico || marca_preferida) {
@@ -180,7 +191,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Guardar información del pedido (producto elegido, precio, etc)
-    if (producto_marca || precio_final) {
+    if (producto_descripcion || precio_final) {
       console.log('[n8n-estado] 💰 Guardando datos del pedido')
       
       // Buscar pedido existente
@@ -201,18 +212,28 @@ export async function POST(request: NextRequest) {
         `
         const pedido = pedidoActual[0]
         
+        // 🆕 USAR CAMPOS NUEVOS (producto_descripcion, forma_pago_detalle)
+        // Si vienen campos legacy, convertirlos a nuevo formato
+        let descripcionFinal = producto_descripcion
+        if (!descripcionFinal && producto_marca) {
+          descripcionFinal = [producto_marca, producto_modelo, producto_medida, producto_diseno]
+            .filter(Boolean)
+            .join(' ')
+        }
+        
+        let formaPagoFinal = forma_pago_detalle
+        if (!formaPagoFinal && forma_pago) {
+          formaPagoFinal = forma_pago // backward compatibility
+        }
+        
         // Merge: mantener valores existentes, actualizar solo los nuevos
         await sql`
           UPDATE lead_pedidos 
           SET 
-            producto_elegido_marca = ${producto_marca || pedido.producto_elegido_marca},
-            producto_elegido_modelo = ${producto_modelo || pedido.producto_elegido_modelo},
-            producto_elegido_medida = ${producto_medida || pedido.producto_elegido_medida},
-            producto_elegido_diseno = ${producto_diseno || pedido.producto_elegido_diseno},
-            precio_unitario = ${precio_unitario || pedido.precio_unitario},
+            producto_descripcion = ${descripcionFinal || pedido.producto_descripcion},
+            forma_pago_detalle = ${formaPagoFinal || pedido.forma_pago_detalle},
             precio_final = ${precio_final || pedido.precio_final},
             cantidad_total = ${cantidad || pedido.cantidad_total},
-            forma_pago = ${forma_pago || pedido.forma_pago},
             updated_at = NOW()
           WHERE id = ${pedidoExistente[0].id}
         `
@@ -221,29 +242,31 @@ export async function POST(request: NextRequest) {
       } else {
         console.log('[n8n-estado] 🆕 Creando nuevo pedido')
         
+        // 🆕 Convertir campos legacy si es necesario
+        let descripcionFinal = producto_descripcion
+        if (!descripcionFinal && producto_marca) {
+          descripcionFinal = [producto_marca, producto_modelo, producto_medida, producto_diseno]
+            .filter(Boolean)
+            .join(' ')
+        }
+        
+        let formaPagoFinal = forma_pago_detalle || forma_pago || null
+        
         // Crear nuevo pedido
         await sql`
           INSERT INTO lead_pedidos (
             lead_id, 
-            producto_elegido_marca,
-            producto_elegido_modelo,
-            producto_elegido_medida,
-            producto_elegido_diseno,
-            precio_unitario,
+            producto_descripcion,
+            forma_pago_detalle,
             precio_final,
-            cantidad_total,
-            forma_pago
+            cantidad_total
           )
           VALUES (
             ${lead_id},
-            ${producto_marca || null},
-            ${producto_modelo || null},
-            ${producto_medida || null},
-            ${producto_diseno || null},
-            ${precio_unitario || null},
+            ${descripcionFinal || null},
+            ${formaPagoFinal},
             ${precio_final || null},
-            ${cantidad || 4},
-            ${forma_pago || null}
+            ${cantidad || 4}
           )
         `
         
@@ -293,7 +316,7 @@ export async function POST(request: NextRequest) {
       success: true,
       lead_id,
       estado_anterior: estadoAnterior,
-      estado_nuevo: nuevo_estado,
+      estado_nuevo: estadoFinal,
       whatsapp_label: leadActualizado[0].whatsapp_label,
       codigo_confirmacion: leadActualizado[0].codigo_confirmacion, // 🆕 CÓDIGO para agendar turno
       nombre_cliente: leadActualizado[0].nombre_cliente,
