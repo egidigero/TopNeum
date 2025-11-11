@@ -29,6 +29,15 @@ export async function POST(request: NextRequest) {
       tipo_vehiculo,
       medida_neumatico,
       marca_preferida,
+      // Campos del producto elegido
+      producto_marca,
+      producto_modelo,
+      producto_medida,
+      producto_diseno,
+      precio_unitario,
+      precio_final,
+      cantidad,
+      forma_pago,
       // Campos de pedido (legacy - mantener por compatibilidad)
       datos_adicionales 
     } = body
@@ -167,6 +176,78 @@ export async function POST(request: NextRequest) {
         `
         
         console.log('[n8n-estado] ✅ Consulta creada')
+      }
+    }
+
+    // Guardar información del pedido (producto elegido, precio, etc)
+    if (producto_marca || precio_final) {
+      console.log('[n8n-estado] 💰 Guardando datos del pedido')
+      
+      // Buscar pedido existente
+      const pedidoExistente = await sql`
+        SELECT id FROM lead_pedidos 
+        WHERE lead_id = ${lead_id} 
+        ORDER BY created_at DESC 
+        LIMIT 1
+      `
+
+      if (pedidoExistente.length > 0) {
+        console.log('[n8n-estado] 🔄 Actualizando pedido existente')
+        
+        // Obtener valores actuales
+        const pedidoActual = await sql`
+          SELECT * FROM lead_pedidos 
+          WHERE id = ${pedidoExistente[0].id}
+        `
+        const pedido = pedidoActual[0]
+        
+        // Merge: mantener valores existentes, actualizar solo los nuevos
+        await sql`
+          UPDATE lead_pedidos 
+          SET 
+            producto_elegido_marca = ${producto_marca || pedido.producto_elegido_marca},
+            producto_elegido_modelo = ${producto_modelo || pedido.producto_elegido_modelo},
+            producto_elegido_medida = ${producto_medida || pedido.producto_elegido_medida},
+            producto_elegido_diseno = ${producto_diseno || pedido.producto_elegido_diseno},
+            precio_unitario = ${precio_unitario || pedido.precio_unitario},
+            precio_final = ${precio_final || pedido.precio_final},
+            cantidad_total = ${cantidad || pedido.cantidad_total},
+            forma_pago = ${forma_pago || pedido.forma_pago},
+            updated_at = NOW()
+          WHERE id = ${pedidoExistente[0].id}
+        `
+        
+        console.log('[n8n-estado] ✅ Pedido actualizado')
+      } else {
+        console.log('[n8n-estado] 🆕 Creando nuevo pedido')
+        
+        // Crear nuevo pedido
+        await sql`
+          INSERT INTO lead_pedidos (
+            lead_id, 
+            producto_elegido_marca,
+            producto_elegido_modelo,
+            producto_elegido_medida,
+            producto_elegido_diseno,
+            precio_unitario,
+            precio_final,
+            cantidad_total,
+            forma_pago
+          )
+          VALUES (
+            ${lead_id},
+            ${producto_marca || null},
+            ${producto_modelo || null},
+            ${producto_medida || null},
+            ${producto_diseno || null},
+            ${precio_unitario || null},
+            ${precio_final || null},
+            ${cantidad || 4},
+            ${forma_pago || null}
+          )
+        `
+        
+        console.log('[n8n-estado] ✅ Pedido creado')
       }
     }
 
