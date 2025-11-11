@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
 import { X, Phone, MessageSquare, ShoppingCart, Trash2 } from "lucide-react"
 import type { User as AuthUser } from "@/lib/auth"
+import { cn } from "@/lib/utils"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -47,6 +48,11 @@ interface LeadDetailPanelProps {
     forma_pago_detalle?: string | null
     cantidad?: number | null
     precio_final?: number | null
+    // 🆕 Información de turno
+    tiene_turno?: boolean
+    turno_fecha?: string | null
+    turno_hora?: string | null
+    turno_estado?: string | null
   }
   users: Array<{ id: string; nombre: string; role: string }>
   currentUser: AuthUser
@@ -293,6 +299,46 @@ export function LeadDetailPanel({ lead, users, currentUser, onClose, onUpdate, o
                     ✅ Pago confirmado
                   </Badge>
                 )}
+
+                {/* 🆕 Estado del Turno - Siempre visible */}
+                <div className="mt-3 pt-3 border-t border-emerald-800">
+                  <div className="text-xs text-emerald-400 mb-2">Estado del turno:</div>
+                  {lead.tiene_turno && lead.turno_fecha ? (
+                    <div className="bg-blue-950/50 border border-blue-800 rounded p-2 space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-blue-300">
+                          📅 {new Date(lead.turno_fecha).toLocaleDateString('es-AR', { 
+                            day: '2-digit', 
+                            month: '2-digit', 
+                            year: 'numeric' 
+                          })}
+                        </span>
+                        {lead.turno_hora && (
+                          <span className="text-sm text-blue-300">
+                            🕐 {lead.turno_hora}
+                          </span>
+                        )}
+                      </div>
+                      <Badge 
+                        variant="outline" 
+                        className={cn(
+                          "w-full justify-center",
+                          lead.turno_estado === 'pendiente' && "border-amber-500 text-amber-400",
+                          lead.turno_estado === 'confirmado' && "border-green-500 text-green-400",
+                          lead.turno_estado === 'completado' && "border-emerald-500 text-emerald-400"
+                        )}
+                      >
+                        {lead.turno_estado === 'pendiente' && '⏳ Turno Pendiente'}
+                        {lead.turno_estado === 'confirmado' && '✅ Turno Confirmado'}
+                        {lead.turno_estado === 'completado' && '✔️ Turno Completado'}
+                      </Badge>
+                    </div>
+                  ) : (
+                    <Badge variant="outline" className="border-slate-600 text-slate-400 w-full justify-center">
+                      ⏳ Turno Pendiente de Agendar
+                    </Badge>
+                  )}
+                </div>
               </div>
             </div>
           )}
