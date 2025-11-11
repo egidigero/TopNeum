@@ -31,7 +31,8 @@ export async function POST(request: NextRequest) {
     console.log('[n8n-estado] 📝 Actualizando estado:', { 
       telefono_whatsapp, 
       nuevo_estado,
-      cambiado_por 
+      cambiado_por,
+      datos_adicionales 
     })
 
     // Validar teléfono
@@ -136,10 +137,64 @@ async function procesarDatosAdicionales(
   estado: string, 
   datos: any
 ) {
+  console.log('[procesarDatosAdicionales] Lead:', lead_id, 'Estado:', estado, 'Datos:', datos)
+
+  // SIEMPRE actualizar campos del lead si vienen en datos
+  const camposActualizar: any = {}
+  
+  if (datos.nombre_cliente) camposActualizar.nombre_cliente = datos.nombre_cliente
+  if (datos.region) camposActualizar.region = datos.region
+  if (datos.tipo_vehiculo) camposActualizar.tipo_vehiculo = datos.tipo_vehiculo
+  if (datos.medida_neumatico) camposActualizar.medida_neumatico = datos.medida_neumatico
+  if (datos.marca_preferida) camposActualizar.marca_preferida = datos.marca_preferida
+
+  // Actualizar lead con la info recolectada
+  if (Object.keys(camposActualizar).length > 0) {
+    const setClauses = Object.keys(camposActualizar).map(key => `${key} = $${key}`).join(', ')
+    console.log('[procesarDatosAdicionales] Actualizando lead con:', camposActualizar)
+    
+    try {
+      // Construir query dinámicamente
+      const updates = []
+      const values: any = { lead_id }
+      
+      if (datos.nombre_cliente) {
+        updates.push('nombre_cliente = $nombre_cliente')
+        values.nombre_cliente = datos.nombre_cliente
+      }
+      if (datos.region) {
+        updates.push('region = $region')
+        values.region = datos.region
+      }
+      
+      if (updates.length > 0) {
+        await sql`
+          UPDATE leads
+          SET ${sql.raw(updates.join(', '))}
+          WHERE id = ${lead_id}
+        `
+      }
+    } catch (err) {
+      console.error('[procesarDatosAdicionales] Error actualizando lead:', err)
+    }
+  }
+
+  // Procesar según el estado específico
   switch (estado) {
+    case 'conversacion_iniciada':
+      // Guardar info inicial del cliente
+      if (datos.nombre_cliente) {
+        await sql`
+          UPDATE leads
+          SET nombre_cliente = ${datos.nombre_cliente}
+          WHERE id = ${lead_id}
+        `
+      }
+      break
+
     case 'consulta_producto':
       // Registrar consulta
-      if (datos.medida_neumatico) {
+      if (datos.medida_neumatico || datos.tipo_vehiculo) {
         await sql`
           INSERT INTO lead_consultas (
             lead_id, 
@@ -150,11 +205,17 @@ async function procesarDatosAdicionales(
           )
           VALUES (
             ${lead_id}, 
-            ${datos.medida_neumatico}, 
+            ${datos.medida_neumatico || null}, 
             ${datos.marca_preferida || null}, 
             ${datos.tipo_vehiculo || null}, 
             ${datos.tipo_uso || null}
           )
+          ON CONFLICT (lead_id) DO UPDATE SET
+            medida_neumatico = COALESCE(EXCLUDED.medida_neumatico, lead_consultas.medida_neumatico),
+            marca_preferida = COALESCE(EXCLUDED.marca_preferida, lead_consultas.marca_preferida),
+            tipo_vehiculo = COALESCE(EXCLUDED.tipo_vehiculo, lead_consultas.tipo_vehiculo),
+            tipo_uso = COALESCE(EXCLUDED.tipo_uso, lead_consultas.tipo_uso),
+            updated_at = NOW()
         `
       }
       break
