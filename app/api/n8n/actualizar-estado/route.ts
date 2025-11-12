@@ -252,6 +252,41 @@ export async function POST(request: NextRequest) {
         
         let formaPagoFinal = forma_pago_detalle || forma_pago || null
         
+        // 🔧 Mapear forma_pago_detalle a valores válidos de la BD
+        // La BD solo acepta: transferencia_con_factura, transferencia_sin_factura, 
+        // efectivo_con_factura, efectivo_sin_factura, 3_cuotas, 6_cuotas, 12_cuotas
+        const mapearFormaPago = (texto: string | null): string => {
+          if (!texto) return '3_cuotas' // default
+          
+          const textoLower = texto.toLowerCase()
+          
+          // Detectar cuotas
+          if (textoLower.includes('3') && textoLower.includes('cuota')) return '3_cuotas'
+          if (textoLower.includes('6') && textoLower.includes('cuota')) return '6_cuotas'
+          if (textoLower.includes('12') && textoLower.includes('cuota')) return '12_cuotas'
+          
+          // Detectar transferencia
+          if (textoLower.includes('transferencia')) {
+            if (textoLower.includes('con factura') || textoLower.includes('con_factura')) {
+              return 'transferencia_con_factura'
+            }
+            return 'transferencia_sin_factura' // default sin factura
+          }
+          
+          // Detectar efectivo
+          if (textoLower.includes('efectivo') || textoLower.includes('contado')) {
+            if (textoLower.includes('con factura') || textoLower.includes('con_factura')) {
+              return 'efectivo_con_factura'
+            }
+            return 'efectivo_sin_factura' // default sin factura
+          }
+          
+          // Default: 3 cuotas
+          return '3_cuotas'
+        }
+        
+        const formaPagoBD = mapearFormaPago(formaPagoFinal)
+        
         // Crear nuevo pedido
         // 🔧 NOTA: Todos los campos NOT NULL de lead_pedidos deben tener valores
         const cantidadFinal = cantidad || 4
@@ -274,7 +309,7 @@ export async function POST(request: NextRequest) {
             ${lead_id},
             ${JSON.stringify([])},
             ${cantidadFinal},
-            ${formaPagoFinal || 'pendiente'},
+            ${formaPagoBD},
             ${precioFinalCalc},
             ${precioFinalCalc},
             'pendiente',
