@@ -201,7 +201,7 @@ export function LeadDetailPanel({ lead, users, currentUser, onClose, onUpdate, o
                   {lead.region}
                 </Badge>
               )}
-              {lead.codigo_confirmacion && lead.estado === 'esperando_pago' && (
+              {lead.codigo_confirmacion && (
                 <Badge variant="outline" className="border-amber-400 bg-amber-50 text-amber-700 font-mono">
                   Código: {lead.codigo_confirmacion}
                 </Badge>

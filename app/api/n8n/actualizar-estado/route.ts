@@ -227,14 +227,18 @@ export async function POST(request: NextRequest) {
         }
         
         // Merge: mantener valores existentes, actualizar solo los nuevos
+        // ⚠️ Para cantidad: si el cliente corrige, SIEMPRE actualizar (incluso si es menor)
+        const cantidadFinal = cantidad !== undefined && cantidad !== null 
+          ? cantidad 
+          : pedido.cantidad_total
+        
         await sql`
           UPDATE lead_pedidos 
           SET 
             producto_descripcion = ${descripcionFinal || pedido.producto_descripcion},
             forma_pago_detalle = ${formaPagoFinal || pedido.forma_pago_detalle},
             precio_final = ${precio_final || pedido.precio_final},
-            cantidad_total = ${cantidad || pedido.cantidad_total},
-            updated_at = NOW()
+            cantidad_total = ${cantidadFinal}
           WHERE id = ${pedidoExistente[0].id}
         `
         
