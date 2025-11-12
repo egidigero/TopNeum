@@ -253,11 +253,12 @@ export async function POST(request: NextRequest) {
         let formaPagoFinal = forma_pago_detalle || forma_pago || null
         
         // Crear nuevo pedido
-        // 🔧 NOTA: productos (JSONB) es NOT NULL en BD, enviamos array vacío como placeholder
+        // 🔧 NOTA: productos (JSONB) y forma_pago son NOT NULL en BD
         await sql`
           INSERT INTO lead_pedidos (
             lead_id, 
             productos,
+            forma_pago,
             producto_descripcion,
             forma_pago_detalle,
             precio_final,
@@ -266,6 +267,7 @@ export async function POST(request: NextRequest) {
           VALUES (
             ${lead_id},
             ${JSON.stringify([])},
+            ${formaPagoFinal || 'pendiente'},
             ${descripcionFinal || null},
             ${formaPagoFinal},
             ${precio_final || null},
