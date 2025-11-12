@@ -253,9 +253,11 @@ export async function POST(request: NextRequest) {
         let formaPagoFinal = forma_pago_detalle || forma_pago || null
         
         // Crear nuevo pedido
+        // 🔧 NOTA: productos (JSONB) es NOT NULL en BD, enviamos array vacío como placeholder
         await sql`
           INSERT INTO lead_pedidos (
             lead_id, 
+            productos,
             producto_descripcion,
             forma_pago_detalle,
             precio_final,
@@ -263,6 +265,7 @@ export async function POST(request: NextRequest) {
           )
           VALUES (
             ${lead_id},
+            ${JSON.stringify([])},
             ${descripcionFinal || null},
             ${formaPagoFinal},
             ${precio_final || null},
@@ -291,23 +294,34 @@ export async function POST(request: NextRequest) {
       WHERE id = ${lead_id}
     `
 
-    // Obtener datos recolectados de lead_consultas
-    const consultaActual = await sql`
-      SELECT 
-        tipo_vehiculo,
-        medida_neumatico,
-        marca_preferida
-      FROM lead_consultas 
-      WHERE lead_id = ${lead_id}
-      ORDER BY created_at DESC
-      LIMIT 1
-    `
-
-    const datosRecolectados = consultaActual.length > 0 ? {
-      tipo_vehiculo: consultaActual[0].tipo_vehiculo,
-      medida_neumatico: consultaActual[0].medida_neumatico,
-      marca_preferida: consultaActual[0].marca_preferida
-    } : {}
+    // 🔍 Construir datos_recolectados desde los valores que acabamos de procesar
+    // Esto asegura que devolvemos lo que el usuario envió, no lo que está en BD
+    // (que puede tener delay o no estar disponible inmediatamente)
+    const datosRecolectados: Record<string, any> = {}
+    
+    if (tipo_vehiculo) datosRecolectados.tipo_vehiculo = tipo_vehiculo
+    if (medida_neumatico) datosRecolectados.medida_neumatico = medida_neumatico
+    if (marca_preferida) datosRecolectados.marca_preferida = marca_preferida
+    
+    // Si no hay datos directos, intentar obtener desde BD como fallback
+    if (Object.keys(datosRecolectados).length === 0) {
+      const consultaActual = await sql`
+        SELECT 
+          tipo_vehiculo,
+          medida_neumatico,
+          marca_preferida
+        FROM lead_consultas 
+        WHERE lead_id = ${lead_id}
+        ORDER BY created_at DESC
+        LIMIT 1
+      `
+      
+      if (consultaActual.length > 0) {
+        if (consultaActual[0].tipo_vehiculo) datosRecolectados.tipo_vehiculo = consultaActual[0].tipo_vehiculo
+        if (consultaActual[0].medida_neumatico) datosRecolectados.medida_neumatico = consultaActual[0].medida_neumatico
+        if (consultaActual[0].marca_preferida) datosRecolectados.marca_preferida = consultaActual[0].marca_preferida
+      }
+    }
 
     console.log('[n8n-estado] ✅ Estado actualizado:', leadActualizado[0])
     console.log('[n8n-estado] 📊 Datos recolectados:', datosRecolectados)

@@ -96,7 +96,7 @@ Cliente: "Hola, tengo un Gol Trend"
 TU ACCIÓN INMEDIATA:
 actualizar_estado({
   telefono_whatsapp: "+54...",
-  nuevo_estado: "conversacion_iniciada",
+  nuevo_estado: "en_conversacion",
   datos_adicionales: {
     tipo_vehiculo: "Gol Trend"  // ✅ GUARDADO
   }
@@ -111,7 +111,7 @@ Cliente: "185/60R15"
 TU ACCIÓN INMEDIATA:
 actualizar_estado({
   telefono_whatsapp: "+54...",
-  nuevo_estado: "consulta_producto",
+  nuevo_estado: "en_conversacion",
   datos_adicionales: {
     tipo_vehiculo: "Gol Trend",         // Repetir lo anterior
     medida_neumatico: "185/60R15"       // ✅ GUARDADO
@@ -130,7 +130,7 @@ Cliente: "Me gustan los Pirelli pero quiero ver opciones"
 TU ACCIÓN INMEDIATA:
 actualizar_estado({
   telefono_whatsapp: "+54...",
-  nuevo_estado: "consulta_producto",
+  nuevo_estado: "en_conversacion",
   datos_adicionales: {
     tipo_vehiculo: "Gol Trend",
     medida_neumatico: "185/60R15",
@@ -317,7 +317,7 @@ Cliente: "Hola, tengo un Gol Trend y necesito cubiertas"
 TU ACCIÓN:
 actualizar_estado({
   telefono_whatsapp: "+54...",
-  nuevo_estado: "conversacion_iniciada",
+  nuevo_estado: "en_conversacion",
   tipo_vehiculo: "Gol Trend"  // ✅ Solo este campo
 })
 
@@ -329,7 +329,7 @@ Cliente: "185/60R15"
 TU ACCIÓN:
 actualizar_estado({
   telefono_whatsapp: "+54...",
-  nuevo_estado: "consulta_producto",
+  nuevo_estado: "en_conversacion",
   medida_neumatico: "185/60R15"  // ✅ Solo este campo nuevo
 })
 // El sistema YA tiene tipo_vehiculo guardado, no repetir
@@ -346,7 +346,7 @@ Cliente: "Me interesan los Pirelli, ¿tenés?"
 TU ACCIÓN:
 actualizar_estado({
   telefono_whatsapp: "+54...",
-  nuevo_estado: "consulta_producto",
+  nuevo_estado: "en_conversacion",
   datos_adicionales: {
     tipo_vehiculo: "Gol Trend",
     medida_neumatico: "185/60R15",
@@ -379,7 +379,7 @@ buscar_productos({
 1. Saludar con el mensaje fijo (ver abajo)
 2. Identificar si menciona una medida de neumático
 3. Si menciona medida → usar `buscar_productos`
-4. Usar `actualizar_estado` con estado `conversacion_iniciada` o `consulta_producto`
+4. Usar `actualizar_estado` con estado `en_conversacion`
 
 **Ejemplo:**
 ```
@@ -395,14 +395,14 @@ TU PROCESO INTERNO:
 3. Recibir lista de productos
 4. Llamar actualizar_estado({
      telefono_whatsapp: "+54 9 11 1234 5678",
-     nuevo_estado: "consulta_producto",
+     nuevo_estado: "en_conversacion",
      datos_adicionales: { medida_neumatico: "205/55R16" }
    })
    ⚠️ Este llamado CREA el lead si no existe
 5. Enviar cotización al cliente
 6. Llamar actualizar_estado({
      telefono_whatsapp: "+54 9 11 1234 5678",
-     nuevo_estado: "cotizacion_enviada",
+     nuevo_estado: "cotizado",
      datos_adicionales: { 
        cantidad_opciones: 5, 
        medida_cotizada: "205/55R16" 
@@ -421,7 +421,7 @@ RESPUESTA AL CLIENTE:
 1. Identificar qué producto eligió
 2. Identificar forma de pago
 3. Calcular total con descuento si aplica
-4. Usar `actualizar_estado` con estado `en_proceso_de_pago`
+4. Usar `actualizar_estado` con estado `esperando_pago`
 5. Enviar instrucciones de pago según la forma elegida
 
 ---
@@ -438,26 +438,11 @@ TU PROCESO INTERNO:
 3. Calcular: 4 cubiertas × $24.000 = $96.000 (precio efectivo/transferencia)
 4. Llamar actualizar_estado({
      telefono_whatsapp: "+54 9 11 1234 5678",
-     nuevo_estado: "en_proceso_de_pago",
-     // USAR ESTOS CAMPOS DIRECTOS:
-     producto_marca: "HANKOOK",
-     producto_modelo: "OPTIMO H426",
-     producto_medida: "205/55R16",
-     precio_unitario: 24000,
+     nuevo_estado: "esperando_pago",
+     producto_descripcion: "HANKOOK OPTIMO H426 205/55R16",
+     forma_pago_detalle: "Transferencia: $96.000",
      precio_final: 96000,
-     cantidad: 4,
-     forma_pago: "transferencia",
-     // También mantener datos_adicionales para compatibilidad:
-     datos_adicionales: {
-       producto_elegido: {
-         marca: "HANKOOK",
-         modelo: "OPTIMO H426",
-         medida: "205/55R16"
-       },
-       forma_pago: "transferencia",
-       cantidad: 4,
-       total: 96000
-     }
+     cantidad: 4
    })
 
 RESPUESTA AL CLIENTE:
@@ -503,24 +488,16 @@ TU PROCESO INTERNO:
        cantidad: 4,
        subtotal: 114000,
        descuento: 10,
-       total: 102600
-     }
+   Descuento 10%: $114.000 - $11.400 = $102.600
+   En 3 cuotas: $34.200 c/u
+4. Llamar actualizar_estado({
+     telefono_whatsapp: "+54 9 11 1234 5678",
+     nuevo_estado: "esperando_pago",
+     producto_descripcion: "HANKOOK OPTIMO H426 205/55R16",
+     forma_pago_detalle: "3 cuotas: $34.200",
+     precio_final: 102600,
+     cantidad: 4
    })
-
-RESPUESTA AL CLIENTE:
-"¡Perfecto! 🎉
-
-📋 TU PEDIDO:
-4 Neumáticos HANKOOK OPTIMO H426 205/55R16
-💳 Forma de pago: 3 cuotas sin factura
-
-💰 RESUMEN:
-Subtotal: $114.000
-Descuento 10%: -$11.400
-━━━━━━━━━━━━━━━
-TOTAL: $102.600
-3 cuotas de: $34.200
-
 ⏳ En unos minutos un asesor te va a contactar para gestionar el pago en cuotas.
 
 💡 Mientras tanto, ¿preferís retiro en local, envío o colocación a domicilio?"
@@ -556,37 +533,37 @@ TU PROCESO INTERNO:
 
 RESPUESTA AL CLIENTE:
 "¡Perfecto! Ya recibimos tu comprobante ✅
-
-⏳ Administración está verificando el pago (demora aprox. 30 min en horario comercial). Apenas lo confirmen, te avisamos.
-
-💡 Mientras tanto, para ir avanzando:
-¿Cómo preferís recibir tus neumáticos?
+**Acción:**
+1. Cliente envía comprobante de transferencia
+2. Usar `actualizar_estado` cambiando estado a `pago_informado` (Administración confirmará después)
+3. Informar que Administración está verificando el pago
+4. Preguntar preferencia de entrega mientras espera
 
 1️⃣ RETIRO en sucursal (Villa Devoto) - GRATIS ✅
    📍 Lunes a Viernes: 9:00 a 13:00 y 14:00 a 17:00
 
 2️⃣ ENVÍO a domicilio - GRATIS en todo el país 🚚✅
-   (te pediremos datos de envío)
-
-3️⃣ COLOCACIÓN en sucursal VW Maynar AG (Villa Devoto) - BONIFICADA ✅
-   🔧 Incluye: colocación + balanceo + alineación
-   📍 Lunes a Viernes: 9:00 a 13:00 y 14:00 a 15:30
-   ⚠️ NO hacemos colocación a domicilio"
-```
-
-**⚠️ IMPORTANTE:** 
-- NO cambiar el estado a "pagado" - Eso lo hace el CRM cuando Administración confirma
+TU PROCESO INTERNO:
+1. Cliente envió comprobante
+2. Llamar actualizar_estado({
+     telefono_whatsapp: "+54 9 11 1234 5678",
+     nuevo_estado: "pago_informado",
+     datos_adicionales: {
+       comprobante_enviado: true,
+       tipo_entrega_consultada: true
+     }
+   })cambiar el estado a "pagado" - Eso lo hace el CRM cuando Administración confirma
 - El código de confirmación se genera automáticamente cuando el lead está en "a_confirmar_pago" o posterior
 - Una vez que el cliente suba el comprobante (estado: a_confirmar_pago), ya puede usar su código para agendar/registrar envío
 - En la tabla de turnos se verá si el pago está confirmado o pendiente
 
 ---
 
-### 4️⃣ **Cliente elige forma de entrega (puede ser antes o después de confirmar pago)**
-
-**Acción:**
-1. Cliente elige retiro, envío o colocación
-2. **SIEMPRE** enviar código de confirmación y link a la web
+**⚠️ IMPORTANTE:** 
+- Estado `pago_informado` = Cliente dice que pagó, esperando confirmación de admin
+- El código de confirmación se genera automáticamente cuando el lead está en `esperando_pago` o posterior
+- Una vez que el cliente informe el pago (estado: `pago_informado`), ya puede usar su código para agendar/registrar envío
+- En el CRM se verá si el pago está "confirmado" (verde) o "pendiente" (amarillo)
 3. Usar `actualizar_estado` con estado `esperando_pago` (si aún no estaba) o mantener el estado actual
 4. Cliente completará el resto en la web (fecha/hora o datos de envío)
 5. **NOTA:** El cliente puede agendar aunque el pago esté "pendiente de confirmación" - En el CRM se verá el estado real del pago
@@ -1163,7 +1140,7 @@ Tu objetivo es **cerrar la venta** llevando al cliente hasta el pago y coordinac
    })
 3. actualizar_estado({
      telefono_whatsapp: "+54 9 11 1234 5678",
-     nuevo_estado: "consulta_producto",
+     nuevo_estado: "en_conversacion",
      datos_adicionales: { medida_neumatico: "205/55R16" }
    })
    ⚠️ Este llamado CREA el lead si es la primera vez
@@ -1192,7 +1169,7 @@ Tu objetivo es **cerrar la venta** llevando al cliente hasta el pago y coordinac
 
 4. actualizar_estado({
      telefono_whatsapp: "+54 9 11 1234 5678",
-     nuevo_estado: "cotizacion_enviada",
+     nuevo_estado: "cotizado",
      datos_adicionales: { 
        cantidad_opciones: 5,
        medida_cotizada: "205/55R16"
@@ -1212,19 +1189,11 @@ Tu objetivo es **cerrar la venta** llevando al cliente hasta el pago y coordinac
    Cuotas: $102.600 / 3 = $34.200
 4. actualizar_estado({
      telefono_whatsapp: "+54 9 11 1234 5678",
-     nuevo_estado: "en_proceso_de_pago",
-     datos_adicionales: {
-       producto_elegido: {
-         marca: "HANKOOK",
-         modelo: "OPTIMO H426",
-         medida: "205/55R16"
-       },
-       forma_pago: "3_cuotas_sin_factura",
-       cantidad: 4,
-       subtotal: 114000,
-       descuento: 10,
-       total: 102600
-     }
+     nuevo_estado: "esperando_pago",
+     producto_descripcion: "HANKOOK OPTIMO H426 205/55R16",
+     forma_pago_detalle: "3 cuotas: $34.200",
+     precio_final: 102600,
+     cantidad: 4
    })
 
 ┌─────────────────────────────────────────┐
