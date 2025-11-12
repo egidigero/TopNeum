@@ -253,25 +253,34 @@ export async function POST(request: NextRequest) {
         let formaPagoFinal = forma_pago_detalle || forma_pago || null
         
         // Crear nuevo pedido
-        // 🔧 NOTA: productos (JSONB) y forma_pago son NOT NULL en BD
+        // 🔧 NOTA: Todos los campos NOT NULL de lead_pedidos deben tener valores
+        const cantidadFinal = cantidad || 4
+        const precioFinalCalc = precio_final || 0
+        
         await sql`
           INSERT INTO lead_pedidos (
             lead_id, 
             productos,
+            cantidad_total,
             forma_pago,
+            subtotal,
+            total,
+            estado_pago,
             producto_descripcion,
             forma_pago_detalle,
-            precio_final,
-            cantidad_total
+            precio_final
           )
           VALUES (
             ${lead_id},
             ${JSON.stringify([])},
+            ${cantidadFinal},
             ${formaPagoFinal || 'pendiente'},
+            ${precioFinalCalc},
+            ${precioFinalCalc},
+            'pendiente',
             ${descripcionFinal || null},
             ${formaPagoFinal},
-            ${precio_final || null},
-            ${cantidad || 4}
+            ${precioFinalCalc}
           )
         `
         
