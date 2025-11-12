@@ -2,13 +2,33 @@ import { NextResponse } from "next/server"
 import { sql } from "@/lib/db"
 import { requireAuth } from "@/lib/auth"
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(
+  request: Request, 
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
     await requireAuth()
+    
+    // Await params (Next.js 15 requirement)
+    const { id } = await params
 
+    // Query lead_pedidos (tabla correcta, no "pagos")
     const pagos = await sql`
-      SELECT * FROM pagos
-      WHERE lead_id = ${params.id}
+      SELECT 
+        id,
+        lead_id,
+        productos,
+        cantidad_total,
+        forma_pago,
+        subtotal,
+        descuento_porcentaje,
+        total,
+        estado_pago,
+        comprobante_url,
+        fecha_pago,
+        created_at
+      FROM lead_pedidos
+      WHERE lead_id = ${id}
       ORDER BY created_at DESC
     `
 

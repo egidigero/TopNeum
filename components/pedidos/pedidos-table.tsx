@@ -6,18 +6,27 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Search, Eye, Phone, Calendar } from "lucide-react"
-import { PedidoDetailPanel } from "./pedido-detail-panel"
+import { Search, Eye, Phone, Calendar, Trash2 } from "lucide-react"
+import { PedidoDetailPanel } from "./pedido-detail-horizontal"
+import { toast } from "sonner"
 
 interface Pedido {
   id: string
   lead_id: string
   cliente_nombre: string
   cliente_telefono: string
-  codigo_confirmacion: string  // 🆕 Código para agendar turno
+  codigo_confirmacion: string
   region: string
   estado_lead: string
-  whatsapp_label: string
+  // Datos del cliente
+  email: string | null
+  dni: string | null
+  direccion: string | null
+  localidad: string | null
+  provincia: string | null
+  codigo_postal: string | null
+  notas: string | null
+  // Datos del pedido
   productos: any
   cantidad_total: number
   forma_pago: string
@@ -27,14 +36,16 @@ interface Pedido {
   estado_pago: string
   fecha_pedido: string
   fecha_pago: string | null
-  // Turno (tabla turnos unificada)
+  // Turno/Envío
   turno_id: string | null
   tipo_entrega: string | null
   fecha_turno: string | null
   hora_turno: string | null
   estado_turno: string | null
-  turno_estado_pago: string  // 🆕 Estado de pago del turno (pendiente/confirmado)
+  turno_estado_pago: string
   observaciones: string | null
+  datos_envio: any
+  items_count: number
 }
 
 interface PedidosTableProps {
@@ -119,6 +130,28 @@ export function PedidosTable({ pedidos }: PedidosTableProps) {
   const openWhatsApp = (telefono: string) => {
     const phone = telefono.replace(/\D/g, "")
     window.open(`https://wa.me/${phone}`, "_blank")
+  }
+
+  const handleDeletePedido = async (pedidoId: string, nombreCliente: string) => {
+    if (!confirm(`¿Estás seguro que deseas eliminar el pedido de ${nombreCliente}?`)) {
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/pedidos/${pedidoId}`, {
+        method: 'DELETE',
+      })
+
+      if (!response.ok) {
+        throw new Error('Error al eliminar el pedido')
+      }
+
+      toast.success('Pedido eliminado correctamente')
+      window.location.reload()
+    } catch (error) {
+      toast.error('Error al eliminar el pedido')
+      console.error(error)
+    }
   }
 
   return (
@@ -269,16 +302,28 @@ export function PedidosTable({ pedidos }: PedidosTableProps) {
                     <TableCell className="text-right text-slate-900 font-medium">
                       {formatPrice(pedido.total)}
                     </TableCell>
+                    <TableCell className="text-slate-600 text-sm">
+                      {formatDate(pedido.fecha_pedido)}
+                    </TableCell>
                     <TableCell>
-                      <Button 
-                        size="sm" 
-                        variant="ghost" 
-                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                        onClick={() => setSelectedPedido(pedido)}
-                      >
-                        <Eye className="w-4 h-4 mr-1" />
-                        Ver Detalle
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        <Button 
+                          size="sm" 
+                          variant="ghost" 
+                          className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                          onClick={() => setSelectedPedido(pedido)}
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="ghost" 
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          onClick={() => handleDeletePedido(pedido.id, pedido.cliente_nombre)}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))

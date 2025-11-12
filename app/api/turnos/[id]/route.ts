@@ -4,12 +4,14 @@ import { sql } from "@/lib/db"
 // GET - Obtener un turno específico
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
+    
     const turno = await sql`
       SELECT * FROM turnos
-      WHERE id = ${params.id}
+      WHERE id = ${id}
     `
 
     if (turno.length === 0) {
@@ -25,9 +27,10 @@ export async function GET(
 // PUT - Actualizar turno
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const body = await request.json()
     const {
       nombre_cliente,
@@ -54,7 +57,7 @@ export async function PUT(
         cantidad_neumaticos = COALESCE(${cantidad_neumaticos}, cantidad_neumaticos),
         observaciones = COALESCE(${observaciones}, observaciones),
         updated_at = now()
-      WHERE id = ${params.id}
+      WHERE id = ${id}
       RETURNING *
     `
 

@@ -2,9 +2,13 @@ import { type NextRequest, NextResponse } from "next/server"
 import { sql } from "@/lib/db"
 import { requireRole } from "@/lib/auth"
 
-export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(
+  request: NextRequest, 
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
     await requireRole(["admin"])
+    const { id } = await params
 
     // First, mark all other tarifas as not vigente
     await sql`
@@ -17,7 +21,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     const result = await sql`
       UPDATE tarifas
       SET vigente = true, vigente_desde = CURRENT_DATE, vigente_hasta = NULL
-      WHERE id = ${params.id}
+      WHERE id = ${id}
       RETURNING *
     `
 

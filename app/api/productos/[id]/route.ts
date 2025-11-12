@@ -8,10 +8,10 @@ import { requireRole } from "@/lib/auth"
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params
+    const { id } = await params
 
     if (!id) {
       return NextResponse.json({ error: "ID requerido" }, { status: 400 })
@@ -49,9 +49,13 @@ export async function GET(
  * PUT /api/productos/[id]
  * Actualiza un producto por ID
  */
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(
+  request: NextRequest, 
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
     await requireRole(["admin"])
+    const { id } = await params
 
     const body = await request.json()
     const {
@@ -92,7 +96,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
           stock = ${stock},
           descripcion_larga = ${descripcion_larga},
           updated_at = now()
-        WHERE id = ${params.id}
+        WHERE id = ${id}
         RETURNING *
       `
     } else {
@@ -116,7 +120,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
           stock = ${stock},
           descripcion_larga = ${descripcion_larga},
           updated_at = now()
-        WHERE id = ${params.id}
+        WHERE id = ${id}
         RETURNING *
       `
     }

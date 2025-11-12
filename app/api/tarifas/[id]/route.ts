@@ -2,9 +2,13 @@ import { type NextRequest, NextResponse } from "next/server"
 import { sql } from "@/lib/db"
 import { requireRole } from "@/lib/auth"
 
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(
+  request: NextRequest, 
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
     await requireRole(["admin"])
+    const { id } = await params
 
     const body = await request.json()
 
@@ -26,7 +30,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
         margen_mayorista_cf = ${body.margen_mayorista_cf},
         margen_mayorista_sf = ${body.margen_mayorista_sf},
         updated_at = NOW()
-      WHERE id = ${params.id}
+      WHERE id = ${id}
       RETURNING *
     `
 
