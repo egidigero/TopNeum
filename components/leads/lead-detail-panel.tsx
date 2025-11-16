@@ -420,21 +420,50 @@ export function LeadDetailPanel({ lead, users, currentUser, onClose, onUpdate, o
               <div className="space-y-2">
                 {pagos.map((pago) => (
                   <div key={pago.id} className="bg-white border-2 border-slate-200 rounded-lg p-3">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-sm font-bold text-slate-900">{formatPrice(pago.monto_reportado)}</span>
+                    {/* Producto */}
+                    {pago.producto_descripcion && (
+                      <div className="mb-2">
+                        <span className="text-xs text-slate-600">Producto:</span>
+                        <p className="text-sm font-semibold text-slate-900">{pago.producto_descripcion}</p>
+                      </div>
+                    )}
+                    
+                    {/* Cantidad y Precio */}
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="text-sm text-slate-700">
+                        {pago.cantidad_total && (
+                          <span className="font-medium">{pago.cantidad_total} unidades</span>
+                        )}
+                      </div>
+                      <span className="text-sm font-bold text-emerald-700">
+                        {formatPrice(pago.precio_final || pago.total)}
+                      </span>
+                    </div>
+                    
+                    {/* Forma de Pago */}
+                    {pago.forma_pago_detalle && (
+                      <div className="text-xs text-slate-600 mb-1">
+                        💳 {pago.forma_pago_detalle}
+                      </div>
+                    )}
+                    
+                    {/* Estado y Fecha */}
+                    <div className="flex items-center justify-between pt-2 border-t border-slate-200">
+                      <span className="text-xs text-slate-500">
+                        {new Date(pago.created_at).toLocaleDateString('es-AR')}
+                      </span>
                       <Badge
                         className={
-                          pago.estado === "verificado"
+                          pago.estado_pago === "confirmado"
                             ? "bg-green-100 text-green-700 border-2 border-green-300"
-                            : pago.estado === "rechazado"
+                            : pago.estado_pago === "rechazado"
                               ? "bg-red-100 text-red-700 border-2 border-red-300"
                               : "bg-yellow-100 text-yellow-700 border-2 border-yellow-300"
                         }
                       >
-                        {pago.estado}
+                        {pago.estado_pago || 'pendiente'}
                       </Badge>
                     </div>
-                    <p className="text-xs text-slate-600">{pago.metodo}</p>
                   </div>
                 ))}
               </div>
