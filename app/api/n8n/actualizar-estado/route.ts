@@ -110,6 +110,35 @@ export async function POST(request: NextRequest) {
       console.log('[n8n-estado] ✅ Nombre actualizado:', nombre)
     }
 
+    // 🆕 ACUMULAR TIPO_VEHICULO si viene (para múltiples consultas)
+    if (tipo_vehiculo) {
+      const vehiculoActual = await sql`
+        SELECT tipo_vehiculo FROM leads WHERE id = ${lead_id}
+      `
+      const vehiculoExistente = vehiculoActual[0]?.tipo_vehiculo || ''
+      
+      // Si ya existe y no incluye el nuevo, acumular
+      if (vehiculoExistente && !vehiculoExistente.includes(tipo_vehiculo)) {
+        const vehiculosAcumulados = `${vehiculoExistente} + ${tipo_vehiculo}`
+        await sql`
+          UPDATE leads
+          SET tipo_vehiculo = ${vehiculosAcumulados}
+          WHERE id = ${lead_id}
+        `
+        console.log('[n8n-estado] ✅ Vehículo acumulado:', vehiculosAcumulados)
+      } else if (!vehiculoExistente) {
+        // Primera vez, simplemente guardar
+        await sql`
+          UPDATE leads
+          SET tipo_vehiculo = ${tipo_vehiculo}
+          WHERE id = ${lead_id}
+        `
+        console.log('[n8n-estado] ✅ Vehículo guardado:', tipo_vehiculo)
+      } else {
+        console.log('[n8n-estado] ℹ️ Vehículo ya existe, no actualizar')
+      }
+    }
+
     // 🆕 AGREGAR NOTAS si vienen
     if (notas) {
       const timestamp = new Date().toISOString()
@@ -167,60 +196,77 @@ export async function POST(request: NextRequest) {
     if (tipo_vehiculo || medida_neumatico || marca_preferida) {
       console.log('[n8n-estado] 💾 Guardando datos del cliente:', { tipo_vehiculo, medida_neumatico, marca_preferida })
       
-      // Obtener consulta existente o crear nueva
-      const consultaExistente = await sql`
-        SELECT id FROM lead_consultas 
-        WHERE lead_id = ${lead_id} 
-        ORDER BY created_at DESC 
-        LIMIT 1
-      `
+      // 🆕 LÓGICA MEJORADA: Si viene medida nueva, crear consulta nueva
+      if (medida_neumatico) {
+        // Verificar si ya existe una consulta con esta medida
+        const consultaMismamedida = await sql`
+          SELECT id FROM lead_consultas 
+          WHERE lead_id = ${lead_id} 
+          AND medida_neumatico = ${medida_neumatico}
+          LIMIT 1
+        `
 
-      if (consultaExistente.length > 0) {
-        console.log('[n8n-estado] 🔄 Actualizando consulta existente:', consultaExistente[0].id)
-        
-        // Actualizar consulta existente - construir query dinámicamente
-        const consultaId = consultaExistente[0].id
-        
-        // Obtener valores actuales
-        const consultaActualQuery = await sql`
-          SELECT tipo_vehiculo, medida_neumatico, marca_preferida 
-          FROM lead_consultas 
-          WHERE id = ${consultaId}
-        `
-        const consultaActual = consultaActualQuery[0]
-        
-        // Merge: mantener valores existentes, actualizar solo los nuevos
-        const nuevoTipoVehiculo = tipo_vehiculo || consultaActual.tipo_vehiculo
-        const nuevaMedida = medida_neumatico || consultaActual.medida_neumatico
-        const nuevaMarca = marca_preferida || consultaActual.marca_preferida
-        
-        await sql`
-          UPDATE lead_consultas 
-          SET 
-            tipo_vehiculo = ${nuevoTipoVehiculo},
-            medida_neumatico = ${nuevaMedida},
-            marca_preferida = ${nuevaMarca},
-            updated_at = NOW()
-          WHERE id = ${consultaId}
-        `
-        
-        console.log('[n8n-estado] ✅ Consulta actualizada')
+        if (consultaMismamedida.length > 0) {
+          // Ya existe consulta con esta medida → actualizar
+          console.log('[n8n-estado] 🔄 Actualizando consulta existente para medida:', medida_neumatico)
+          const consultaId = consultaMismamedida[0].id
+          
+          await sql`
+            UPDATE lead_consultas 
+            SET 
+              tipo_vehiculo = COALESCE(${tipo_vehiculo}, tipo_vehiculo),
+              marca_preferida = COALESCE(${marca_preferida}, marca_preferida),
+              updated_at = NOW()
+            WHERE id = ${consultaId}
+          `
+        } else {
+          // Nueva medida → crear nueva consulta
+          console.log('[n8n-estado] 🆕 Creando nueva consulta para medida:', medida_neumatico)
+          
+          await sql`
+            INSERT INTO lead_consultas (lead_id, tipo_vehiculo, medida_neumatico, marca_preferida)
+            VALUES (
+              ${lead_id},
+              ${tipo_vehiculo || null},
+              ${medida_neumatico},
+              ${marca_preferida || null}
+            )
+          `
+        }
       } else {
-        console.log('[n8n-estado] 🆕 Creando nueva consulta')
-        
-        // Crear nueva consulta
-        await sql`
-          INSERT INTO lead_consultas (lead_id, tipo_vehiculo, medida_neumatico, marca_preferida)
-          VALUES (
-            ${lead_id},
-            ${tipo_vehiculo || null},
-            ${medida_neumatico || null},
-            ${marca_preferida || null}
-          )
+        // Solo vienen tipo_vehiculo o marca_preferida (sin medida)
+        // Actualizar la última consulta
+        const ultimaConsulta = await sql`
+          SELECT id FROM lead_consultas 
+          WHERE lead_id = ${lead_id} 
+          ORDER BY created_at DESC 
+          LIMIT 1
         `
-        
-        console.log('[n8n-estado] ✅ Consulta creada')
+
+        if (ultimaConsulta.length > 0) {
+          await sql`
+            UPDATE lead_consultas 
+            SET 
+              tipo_vehiculo = COALESCE(${tipo_vehiculo}, tipo_vehiculo),
+              marca_preferida = COALESCE(${marca_preferida}, marca_preferida),
+              updated_at = NOW()
+            WHERE id = ${ultimaConsulta[0].id}
+          `
+        } else {
+          // No hay consultas todavía, crear una nueva
+          await sql`
+            INSERT INTO lead_consultas (lead_id, tipo_vehiculo, medida_neumatico, marca_preferida)
+            VALUES (
+              ${lead_id},
+              ${tipo_vehiculo || null},
+              ${medida_neumatico || null},
+              ${marca_preferida || null}
+            )
+          `
+        }
       }
+      
+      console.log('[n8n-estado] ✅ Consulta guardada')
     }
 
     // Guardar información del pedido (producto elegido, precio, etc)

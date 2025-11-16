@@ -161,8 +161,12 @@ Dale! Te paso la cotización para el Cruze:
 ```
 
 **Sistema acumula:**
-- Consulta 1: Gol Trend - 185/60R15
-- Consulta 2: Cruze - 205/55R16
+- ✅ **Vehículos:** "Volkswagen Gol Trend + Chevrolet Cruze" (en tabla leads)
+- ✅ **Consulta 1:** Gol Trend - 185/60R15 (en tabla lead_consultas)
+- ✅ **Consulta 2:** Cruze - 205/55R16 (nueva fila en lead_consultas)
+- ✅ **Notas:** Historial con timestamps de cada consulta
+
+**💡 Resultado:** En el panel verás AMBOS vehículos y TODAS las medidas consultadas.
 
 ---
 
@@ -204,21 +208,29 @@ Para preparar tu pedido necesito saber: ¿cuántas cubiertas querés? 🔢
 **Cliente:** "Quiero las dos, las del Gol y las del Cruze"
 
 **Tu acción:**
-1. Confirmar cantidades:
+1. **⚠️ CONFIRMAR CANTIDADES (OBLIGATORIO):**
 ```
 Perfecto! ¿Cuántas necesitás de cada una?
-- Gol: ¿4 cubiertas?
-- Cruze: ¿4 cubiertas?
+- Gol (185/60R15): ¿cuántas?
+- Cruze (205/55R16): ¿cuántas?
 ```
 
-2. Cliente confirma: "Sí, 4 de cada una"
+2. **ESPERAR** respuesta explícita del cliente:
+```
+Cliente: "4 de cada una"
+```
 
-3. Llamar `actualizar_estado`:
-   - `producto_descripcion`: "PIRELLI P400 EVO 185/60R15 + PIRELLI CINTURATO 205/55R16"
-   - `forma_pago_detalle`: "3 cuotas: $67.000"
+3. **SOLO DESPUÉS** de confirmar, llamar `actualizar_estado`:
+   - `producto_descripcion`: "PIRELLI P400 EVO 185/60R15 (4 unidades) + PIRELLI CINTURATO 205/55R16 (4 unidades)"
+   - `forma_pago_detalle`: "3 cuotas: $67.000" (o la forma que elija)
    - `cantidad`: 8 (suma total)
-   - `precio_final`: 268000 (suma de ambos subtotales)
-   - `notas`: "Pedido para 2 vehículos: Gol Trend (4) + Cruze (4)"
+   - `precio_final`: 268000 (suma de ambos subtotales calculados)
+   - `notas`: "Pedido múltiple: Gol Trend 185/60R15 x4 ($114.000) + Cruze 205/55R16 x4 ($154.000)"
+
+**💡 IMPORTANTE:**
+- Detallar bien cada producto con su medida y cantidad
+- Sumar correctamente los totales
+- Incluir en notas el desglose para que el equipo sepa qué preparar
 
 ---
 
