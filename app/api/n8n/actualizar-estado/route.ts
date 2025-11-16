@@ -113,12 +113,17 @@ export async function POST(request: NextRequest) {
     // 🆕 AGREGAR NOTAS si vienen
     if (notas) {
       const timestamp = new Date().toISOString()
+      // Obtener notas actuales primero
+      const notasActuales = await sql`
+        SELECT notas FROM leads WHERE id = ${lead_id}
+      `
+      const notasExistentes = notasActuales[0]?.notas || ''
+      const nuevaNota = `\n[${timestamp}] ${notas}`
+      const notasActualizadas = notasExistentes + nuevaNota
+      
       await sql`
         UPDATE leads
-        SET notas = CONCAT(
-          COALESCE(notas, ''), 
-          ${`\n[${timestamp}] ${notas}`}
-        )
+        SET notas = ${notasActualizadas}
         WHERE id = ${lead_id}
       `
       console.log('[n8n-estado] ✅ Notas agregadas:', notas)

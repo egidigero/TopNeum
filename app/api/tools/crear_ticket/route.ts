@@ -62,6 +62,8 @@ export async function POST(request: NextRequest) {
       "consulta_tecnica",
       "problema_pago",
       "reclamo",
+      "confirmacion_pago",  // 🆕 Cliente envió comprobante
+      "pago_cuotas",        // 🆕 Cliente elige cuotas
       "otro"
     ]
 
