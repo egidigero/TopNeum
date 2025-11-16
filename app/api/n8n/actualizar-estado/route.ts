@@ -184,14 +184,6 @@ export async function POST(request: NextRequest) {
       WHERE id = ${lead_id}
     `
 
-    // Registrar en historial (el trigger lo hace automáticamente, pero lo hacemos explícito)
-    if (estadoFinal !== estadoAnterior) {
-      await sql`
-        INSERT INTO lead_historial (lead_id, estado_anterior, estado_nuevo, cambiado_por)
-        VALUES (${lead_id}, ${estadoAnterior}, ${estadoFinal}, ${cambiado_por})
-      `
-    }
-
     // Guardar información del cliente en lead_consultas
     if (tipo_vehiculo || medida_neumatico || marca_preferida) {
       console.log('[n8n-estado] 💾 Guardando datos del cliente:', { tipo_vehiculo, medida_neumatico, marca_preferida })

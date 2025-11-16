@@ -104,7 +104,7 @@ export async function POST(request: NextRequest) {
         success: true,
         productos: [],
         cantidad_total: 0,
-        mensaje_formateado: `No encontramos productos con medida ${medida_neumatico} ${marca ? `de marca ${marca}` : ""} en stock.\n\n¿Me confirmás la medida? A veces hay pequeñas variaciones.`
+        mensaje_formateado: `No encontramos productos con medida ${medida_neumatico} ${marca ? `de marca ${marca}` : ""} en stock.\n¿Me confirmás la medida? A veces hay pequeñas variaciones.`
       })
     }
 
@@ -152,7 +152,7 @@ function generarMensajeWhatsApp(productos: any[], medida: string, region: string
   const cantidad = productos.length
   const limite = Math.min(cantidad, 5) // Mostrar máximo 5 productos
 
-  let mensaje = `🔍 Encontramos ${cantidad} ${cantidad === 1 ? 'opción' : 'opciones'} para ${medida}\n\n`
+  let mensaje = `🔍 Encontramos ${cantidad} ${cantidad === 1 ? 'opción' : 'opciones'} para ${medida}\n`
 
   for (let i = 0; i < limite; i++) {
     const p = productos[i]
@@ -177,14 +177,14 @@ function generarMensajeWhatsApp(productos: any[], medida: string, region: string
     const totalContado = precioContado * 4
     
     mensaje += `💵 PROMO CONTADO ${region}: $${precioContado.toLocaleString('es-AR')}\n`
-    mensaje += `   (Total: $${totalContado.toLocaleString('es-AR')}) ⭐\n\n`
+    mensaje += `   (Total: $${totalContado.toLocaleString('es-AR')}) ⭐\n`
   }
 
   if (cantidad > 5) {
-    mensaje += `\n💡 Hay ${cantidad - 5} opciones más disponibles. ¿Querés que te las muestre?\n\n`
+    mensaje += `\n💡 Hay ${cantidad - 5} opciones más disponibles. ¿Querés que te las muestre?\n`
   }
 
-  mensaje += `💡 ¿Cuál te interesa? También te puedo dar más info sobre cada marca.`
+  mensaje += `\n💡 ¿Cuál te interesa? También te puedo dar más info sobre cada marca.`
 
   return mensaje
 }
