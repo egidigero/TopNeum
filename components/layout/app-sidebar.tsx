@@ -4,7 +4,7 @@ import type React from "react"
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { LayoutDashboard, Package, MessageSquare, ShoppingCart, Calendar, LogOut } from "lucide-react"
+import { LayoutDashboard, Package, MessageSquare, ShoppingCart, Calendar, LogOut, Ticket } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import type { User, UserRole } from "@/lib/auth"
@@ -40,6 +40,11 @@ const navItems: NavItem[] = [
     title: "Clientes WhatsApp",
     href: "/leads",
     icon: MessageSquare,
+  },
+  {
+    title: "Tickets",
+    href: "/tickets",
+    icon: Ticket,
   },
   {
     title: "Pedidos",

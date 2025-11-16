@@ -17,10 +17,6 @@ export default async function PedidoDetailPage({ params }: { params: { id: strin
       l.nombre_cliente,
       l.region,
       l.estado as estado_lead,
-      l.direccion,
-      l.localidad,
-      l.provincia,
-      l.codigo_postal,
       l.notas,
       l.created_at,
       l.updated_at,
@@ -35,7 +31,17 @@ export default async function PedidoDetailPage({ params }: { params: { id: strin
       t.estado as estado_turno,
       t.fecha as fecha_turno,
       t.hora_inicio,
-      t.observaciones
+      t.observaciones,
+      -- Datos del cliente desde turnos
+      t.email as cliente_email,
+      t.telefono as cliente_telefono_contacto,
+      t.datos_envio,
+      -- Datos de envío si aplica
+      t.transportista,
+      t.numero_tracking,
+      t.estado_envio,
+      t.fecha_envio,
+      t.fecha_entrega_estimada
     FROM leads l
     LEFT JOIN lead_pedidos lp ON lp.lead_id = l.id
     LEFT JOIN turnos t ON t.lead_id = l.id
@@ -49,25 +55,36 @@ export default async function PedidoDetailPage({ params }: { params: { id: strin
 
   const pedidoRaw = pedidosRaw[0]
   
-  // Construir dirección completa
-  const direccionCompleta = [
-    pedidoRaw.direccion,
-    pedidoRaw.localidad,
-    pedidoRaw.provincia,
-    pedidoRaw.codigo_postal
-  ].filter(Boolean).join(', ')
+  // Construir dirección desde datos_envio (jsonb) o datos de turno
+  let direccionCompleta = 'Sin dirección especificada'
+  if (pedidoRaw.datos_envio) {
+    const envio = pedidoRaw.datos_envio
+    direccionCompleta = [
+      envio.direccion,
+      envio.localidad,
+      envio.provincia,
+      envio.codigo_postal
+    ].filter(Boolean).join(', ')
+  }
 
   const pedido = {
     id: String(pedidoRaw.pedido_id || pedidoRaw.lead_id),
     cliente_nombre: String(pedidoRaw.nombre_cliente || 'Sin nombre'),
-    cliente_telefono: String(pedidoRaw.telefono_whatsapp || ''),
+    cliente_telefono: String(pedidoRaw.cliente_telefono_contacto || pedidoRaw.telefono_whatsapp || ''),
+    cliente_email: pedidoRaw.cliente_email || null,
     estado: String(pedidoRaw.estado_turno || pedidoRaw.estado_pago || 'pendiente_preparacion'),
-    direccion: direccionCompleta || 'Sin dirección especificada',
+    direccion: direccionCompleta,
     tipo_entrega: String(pedidoRaw.tipo_entrega || 'retiro'),
     items_total: Number(pedidoRaw.total || 0),
     notas: pedidoRaw.notas || pedidoRaw.observaciones || null,
     created_at: String(pedidoRaw.created_at),
     updated_at: String(pedidoRaw.updated_at),
+    // Datos de envío
+    transportista: pedidoRaw.transportista || null,
+    numero_tracking: pedidoRaw.numero_tracking || null,
+    estado_envio: pedidoRaw.estado_envio || null,
+    fecha_envio: pedidoRaw.fecha_envio ? String(pedidoRaw.fecha_envio) : null,
+    fecha_entrega_estimada: pedidoRaw.fecha_entrega_estimada ? String(pedidoRaw.fecha_entrega_estimada) : null,
   }
 
   // Parsear productos desde producto_descripcion (texto) o productos (jsonb)

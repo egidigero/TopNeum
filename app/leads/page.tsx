@@ -9,7 +9,7 @@ import Image from "next/image"
 export default async function LeadsPage() {
   const user = await getSession()
 
-  // Fetch all leads with related data
+  // Fetch all leads with related data including ALL consultas and cotizaciones
   const leadsRaw = await sql`
     SELECT 
       l.id,
@@ -17,22 +17,41 @@ export default async function LeadsPage() {
       l.nombre_cliente,
       l.region,
       l.estado,
-      l.whatsapp_label,
       l.ultima_interaccion,
-      l.asignado_a,
       l.created_at,
       l.updated_at,
       l.origen,
       l.codigo_confirmacion,
-      l.email,
-      l.dni,
-      l.direccion,
-      l.localidad,
-      l.provincia,
-      l.codigo_postal,
       l.notas,
-      u.nombre as asignado_nombre,
-      -- Datos adicionales de consultas
+      -- 🆕 TODAS las consultas como array
+      (
+        SELECT COALESCE(json_agg(
+          json_build_object(
+            'id', lc.id,
+            'medida_neumatico', lc.medida_neumatico,
+            'marca_preferida', lc.marca_preferida,
+            'tipo_vehiculo', lc.tipo_vehiculo,
+            'cantidad', lc.cantidad,
+            'created_at', lc.created_at
+          ) ORDER BY lc.created_at DESC
+        ), '[]'::json)
+        FROM lead_consultas lc WHERE lc.lead_id = l.id
+      ) as consultas,
+      -- 🆕 TODAS las cotizaciones como array
+      (
+        SELECT COALESCE(json_agg(
+          json_build_object(
+            'id', lcot.id,
+            'productos_mostrados', lcot.productos_mostrados,
+            'precio_total_contado', lcot.precio_total_contado,
+            'precio_total_3cuotas', lcot.precio_total_3cuotas,
+            'region', lcot.region,
+            'created_at', lcot.created_at
+          ) ORDER BY lcot.created_at DESC
+        ), '[]'::json)
+        FROM lead_cotizaciones lcot WHERE lcot.lead_id = l.id
+      ) as cotizaciones,
+      -- Última consulta para retrocompatibilidad
       (SELECT medida_neumatico FROM lead_consultas WHERE lead_id = l.id ORDER BY created_at DESC LIMIT 1) as medida_neumatico,
       (SELECT marca_preferida FROM lead_consultas WHERE lead_id = l.id ORDER BY created_at DESC LIMIT 1) as marca_preferida,
       (SELECT tipo_vehiculo FROM lead_consultas WHERE lead_id = l.id ORDER BY created_at DESC LIMIT 1) as tipo_vehiculo,
@@ -40,7 +59,6 @@ export default async function LeadsPage() {
       -- Datos adicionales de pedidos
       (SELECT forma_pago FROM lead_pedidos WHERE lead_id = l.id ORDER BY created_at DESC LIMIT 1) as forma_pago,
       (SELECT total FROM lead_pedidos WHERE lead_id = l.id ORDER BY created_at DESC LIMIT 1) as ultimo_total,
-      -- 🆕 Datos del producto elegido
       (SELECT producto_descripcion FROM lead_pedidos WHERE lead_id = l.id ORDER BY created_at DESC LIMIT 1) as producto_descripcion,
       (SELECT forma_pago_detalle FROM lead_pedidos WHERE lead_id = l.id ORDER BY created_at DESC LIMIT 1) as forma_pago_detalle,
       (SELECT cantidad_total FROM lead_pedidos WHERE lead_id = l.id ORDER BY created_at DESC LIMIT 1) as cantidad,
@@ -49,13 +67,12 @@ export default async function LeadsPage() {
       (SELECT COUNT(*) FROM lead_consultas WHERE lead_id = l.id) as total_consultas,
       (SELECT COUNT(*) FROM lead_pedidos WHERE lead_id = l.id) as total_pedidos,
       (SELECT COUNT(*) FROM lead_pedidos WHERE lead_id = l.id AND estado_pago IN ('pagado', 'sena_recibida')) as pagos_count,
-      -- 🆕 Información de turnos
+      -- Información de turnos
       (SELECT COUNT(*) FROM turnos WHERE lead_id = l.id AND estado_turno != 'cancelado') as tiene_turno,
       (SELECT fecha FROM turnos WHERE lead_id = l.id AND estado_turno != 'cancelado' ORDER BY created_at DESC LIMIT 1) as turno_fecha,
       (SELECT hora_inicio FROM turnos WHERE lead_id = l.id AND estado_turno != 'cancelado' ORDER BY created_at DESC LIMIT 1) as turno_hora,
       (SELECT estado_turno FROM turnos WHERE lead_id = l.id AND estado_turno != 'cancelado' ORDER BY created_at DESC LIMIT 1) as turno_estado
     FROM leads l
-    LEFT JOIN users u ON l.asignado_a = u.id
     WHERE l.estado NOT IN ('pedido_confirmado', 'perdido')
     ORDER BY l.ultima_interaccion DESC
   `
@@ -67,40 +84,47 @@ export default async function LeadsPage() {
     canal: 'whatsapp',
     estado: String(l.estado || 'nuevo') as "nuevo" | "en_conversacion" | "cotizado" | "esperando_pago" | "pago_informado" | "pedido_confirmado" | "perdido",
     region: String(l.region || 'INTERIOR'),
-    whatsapp_label: String(l.whatsapp_label || 'en caliente'),
     codigo_confirmacion: l.codigo_confirmacion || null,
-    // Datos del cliente
-    email: l.email || null,
-    dni: l.dni || null,
-    direccion: l.direccion || null,
-    localidad: l.localidad || null,
-    provincia: l.provincia || null,
-    codigo_postal: l.codigo_postal || null,
-    // Datos adicionales
+    // 🆕 TODAS las consultas
+    consultas: Array.isArray(l.consultas) ? l.consultas.map((c: any) => ({
+      id: String(c.id),
+      medida_neumatico: String(c.medida_neumatico || ''),
+      marca_preferida: c.marca_preferida || null,
+      tipo_vehiculo: c.tipo_vehiculo || null,
+      cantidad: Number(c.cantidad || 4),
+      created_at: String(c.created_at),
+    })) : [],
+    // 🆕 TODAS las cotizaciones
+    cotizaciones: Array.isArray(l.cotizaciones) ? l.cotizaciones.map((cot: any) => ({
+      id: String(cot.id),
+      productos_mostrados: cot.productos_mostrados || [],
+      precio_total_contado: Number(cot.precio_total_contado || 0),
+      precio_total_3cuotas: Number(cot.precio_total_3cuotas || 0),
+      region: String(cot.region || 'INTERIOR'),
+      created_at: String(cot.created_at),
+    })) : [],
+    // Última consulta para retrocompatibilidad
     medida_neumatico: l.medida_neumatico || null,
     marca_preferida: l.marca_preferida || null,
     tipo_vehiculo: l.tipo_vehiculo || null,
     tipo_uso: l.tipo_uso || null,
     forma_pago: l.forma_pago || null,
     ultimo_total: l.ultimo_total ? Number(l.ultimo_total) : null,
-    // 🆕 Producto elegido
     producto_descripcion: l.producto_descripcion || null,
     forma_pago_detalle: l.forma_pago_detalle || null,
     cantidad: l.cantidad ? Number(l.cantidad) : null,
     precio_final: l.precio_final ? Number(l.precio_final) : null,
-    ultima_medida: l.medida_neumatico || null, // Alias para compatibilidad
+    ultima_medida: l.medida_neumatico || null,
     // Contadores
     total_consultas: Number(l.total_consultas || 0),
     total_pedidos: Number(l.total_pedidos || 0),
     pagos_count: Number(l.pagos_count || 0),
-    // 🆕 Información de turnos
+    // Información de turnos
     tiene_turno: Number(l.tiene_turno || 0) > 0,
     turno_fecha: l.turno_fecha ? String(l.turno_fecha) : null,
     turno_hora: l.turno_hora ? String(l.turno_hora) : null,
     turno_estado: l.turno_estado ? String(l.turno_estado) : null,
     // Otros
-    asignado_a: l.asignado_a ? String(l.asignado_a) : null,
-    asignado_nombre: l.asignado_nombre || null,
     ultima_interaccion: l.ultima_interaccion || null,
     created_at: String(l.created_at),
     origen: String(l.origen || 'whatsapp'),

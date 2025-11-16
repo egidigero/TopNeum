@@ -17,12 +17,6 @@ export default async function PedidosPage() {
       l.region,
       l.estado as estado_lead,
       l.codigo_confirmacion,
-      l.email,
-      l.dni,
-      l.direccion,
-      l.localidad,
-      l.provincia,
-      l.codigo_postal,
       l.notas,
       -- Datos de consultas (para obtener productos si no están en pedidos)
       (SELECT medida_neumatico FROM lead_consultas WHERE lead_id = l.id ORDER BY created_at DESC LIMIT 1) as medida_neumatico,
@@ -50,7 +44,14 @@ export default async function PedidosPage() {
       t.estado as estado_turno,
       t.estado_pago as turno_estado_pago,
       t.observaciones,
-      t.datos_envio
+      t.datos_envio,
+      -- Extraer datos del cliente desde datos_envio JSONB (si existe)
+      t.datos_envio->>'email' as email,
+      t.datos_envio->>'dni' as dni,
+      t.datos_envio->>'direccion' as direccion,
+      t.datos_envio->>'localidad' as localidad,
+      t.datos_envio->>'provincia' as provincia,
+      t.datos_envio->>'codigo_postal' as codigo_postal
     FROM leads l
     LEFT JOIN lead_pedidos p ON p.lead_id = l.id
     LEFT JOIN turnos t ON t.lead_id = l.id

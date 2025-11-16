@@ -27,8 +27,19 @@ interface Lead {
   canal: string
   region: string
   estado: LeadEstado
-  whatsapp_label?: string | null
-  // Datos recolectados
+  // 🆕 Consultas y cotizaciones (múltiples)
+  consultas?: Array<{
+    medida_neumatico: string
+    marca_preferida: string | null
+    tipo_vehiculo: string | null
+    cantidad: number
+  }> | null
+  cotizaciones?: Array<{
+    productos_mostrados: any
+    precio_total_contado: number
+    region: string
+  }> | null
+  // Datos recolectados (retrocompatibilidad - última consulta)
   medida_neumatico: string | null
   marca_preferida: string | null
   tipo_vehiculo: string | null
@@ -39,9 +50,7 @@ interface Lead {
   total_consultas: number
   total_pedidos: number
   pagos_count: number
-  // Asignación y seguimiento
-  asignado_a: string | null
-  asignado_nombre: string | null
+  // Seguimiento
   ultima_interaccion: string | null
   created_at: string
   origen: string
@@ -80,7 +89,6 @@ export function LeadsKanban({ leads: initialLeads, users, currentUser }: LeadsKa
   const [leads, setLeads] = useState(initialLeads)
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
-  const [filterAsignado, setFilterAsignado] = useState<string>("all")
 
   const filteredLeads = leads.filter((lead) => {
     const nombre = lead.nombre_cliente || lead.nombre || ""
@@ -91,9 +99,7 @@ export function LeadsKanban({ leads: initialLeads, users, currentUser }: LeadsKa
       telefono.includes(searchTerm) ||
       (lead.origen?.toLowerCase() || "").includes(searchTerm.toLowerCase())
 
-    const matchesAsignado = filterAsignado === "all" || lead.asignado_a === filterAsignado
-
-    return matchesSearch && matchesAsignado
+    return matchesSearch
   })
 
   const getLeadsByEstado = (estado: LeadEstado) => {
@@ -141,19 +147,6 @@ export function LeadsKanban({ leads: initialLeads, users, currentUser }: LeadsKa
                 className="pl-10 bg-white border-slate-300"
               />
             </div>
-
-            <select
-              value={filterAsignado}
-              onChange={(e) => setFilterAsignado(e.target.value)}
-              className="px-4 py-2 bg-white border border-slate-300 rounded-lg text-slate-900 text-sm min-w-[200px]"
-            >
-              <option value="all">Todos los asignados</option>
-              {users.map((user) => (
-                <option key={user.id} value={user.id}>
-                  {user.nombre}
-                </option>
-              ))}
-            </select>
           </div>
 
           <div className="mt-4 text-sm text-slate-600">

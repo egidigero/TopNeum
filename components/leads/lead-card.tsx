@@ -5,7 +5,7 @@ import type React from "react"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Phone, User, Calendar, CalendarCheck, Package, MapPin, Tag, MessageSquare } from "lucide-react"
+import { Phone, Calendar, CalendarCheck, Package, MapPin, Tag, MessageSquare } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface LeadCardProps {
@@ -17,11 +17,21 @@ interface LeadCardProps {
     telefono?: string
     region?: string | null
     origen?: string | null
-    whatsapp_label?: string | null
-    asignado_nombre: string | null
+    // Campos de producto - Ahora soporta múltiples consultas
+    consultas?: Array<{
+      medida_neumatico: string
+      marca_preferida: string | null
+      tipo_vehiculo: string | null
+      cantidad: number
+    }> | null
+    cotizaciones?: Array<{
+      productos_mostrados: any
+      precio_total_contado: number
+      region: string
+    }> | null
     ultima_interaccion: string | null
     created_at: string
-    // Campos de producto
+    // Campos de pedido
     producto_descripcion?: string | null
     forma_pago_detalle?: string | null
     cantidad?: number | null
@@ -89,8 +99,8 @@ export function LeadCard({ lead, onClick, isSelected }: LeadCardProps) {
     <Card
       onClick={onClick}
       className={cn(
-        "bg-white border-2 border-slate-200 p-4 cursor-pointer transition-all hover:border-blue-300 hover:shadow-lg",
-        isSelected && "border-blue-500 shadow-lg ring-2 ring-blue-200",
+        "bg-white border-2 border-slate-200 p-4 cursor-pointer transition-all duration-200 hover:border-blue-400 hover:shadow-lg hover:scale-[1.02]",
+        isSelected && "border-blue-500 shadow-xl ring-2 ring-blue-200",
       )}
     >
       <div className="space-y-3">
@@ -119,7 +129,40 @@ export function LeadCard({ lead, onClick, isSelected }: LeadCardProps) {
           </Button>
         </div>
 
-        {/* Producto Info */}
+        {/* Consultas del Lead - Mostrar TODAS */}
+        {lead.consultas && lead.consultas.length > 0 && (
+          <div className="space-y-2">
+            {lead.consultas.map((consulta, idx) => (
+              <div
+                key={idx}
+                className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-lg p-2.5"
+              >
+                <div className="flex items-start gap-2">
+                  <Package className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                  <div className="flex-1 min-w-0 space-y-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Badge className="bg-blue-600 text-white text-xs font-mono">
+                        {consulta.medida_neumatico}
+                      </Badge>
+                      {consulta.marca_preferida && (
+                        <Badge variant="outline" className="border-blue-300 text-blue-700 text-xs">
+                          {consulta.marca_preferida}
+                        </Badge>
+                      )}
+                    </div>
+                    {consulta.tipo_vehiculo && (
+                      <p className="text-xs text-blue-700">
+                        🚗 {consulta.tipo_vehiculo} • {consulta.cantidad} neumáticos
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Producto del Pedido Confirmado */}
         {lead.producto_descripcion && (
           <div className="bg-gradient-to-br from-emerald-50 to-green-50 border-2 border-emerald-200 rounded-lg p-3 space-y-2">
             <div className="flex items-start gap-2">
@@ -147,7 +190,7 @@ export function LeadCard({ lead, onClick, isSelected }: LeadCardProps) {
         )}
 
         {/* Turno Info */}
-        {(lead.tiene_turno && lead.turno_fecha) ? (
+        {(lead.tiene_turno && lead.turno_fecha) && (
           <div className="bg-gradient-to-br from-blue-50 to-cyan-50 border-2 border-blue-200 rounded-lg p-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -157,7 +200,7 @@ export function LeadCard({ lead, onClick, isSelected }: LeadCardProps) {
                     {formatTurnoDate(lead.turno_fecha)}
                   </p>
                   {lead.turno_hora && (
-                    <p className="text-xs text-blue-700">{lead.turno_hora}</p>
+                    <p className="text-xs text-blue-600">{lead.turno_hora}</p>
                   )}
                 </div>
               </div>
@@ -175,14 +218,7 @@ export function LeadCard({ lead, onClick, isSelected }: LeadCardProps) {
               )}
             </div>
           </div>
-        ) : lead.producto_descripcion ? (
-          <div className="bg-amber-50 border-2 border-amber-200 rounded-lg p-2">
-            <p className="text-xs text-amber-700 font-medium flex items-center gap-2">
-              <Calendar className="w-3.5 h-3.5" />
-              ⏳ Turno Pendiente de Agendar
-            </p>
-          </div>
-        ) : null}
+        )}
 
         {/* Tags */}
         <div className="flex flex-wrap gap-2">
@@ -192,28 +228,21 @@ export function LeadCard({ lead, onClick, isSelected }: LeadCardProps) {
               {lead.origen}
             </Badge>
           )}
-          {lead.whatsapp_label && (
+          {lead.cotizaciones && lead.cotizaciones.length > 0 && (
             <Badge variant="outline" className="border-purple-200 bg-purple-50 text-purple-700 text-xs font-medium">
-              {lead.whatsapp_label}
+              {lead.cotizaciones.length} {lead.cotizaciones.length === 1 ? 'cotización' : 'cotizaciones'}
             </Badge>
           )}
         </div>
 
         {/* Footer */}
         <div className="flex items-center justify-between text-xs pt-2 border-t border-slate-200">
-          <div className="flex items-center gap-1 text-slate-600">
-            {lead.asignado_nombre ? (
-              <>
-                <User className="w-3.5 h-3.5 text-blue-600" />
-                <span className="font-medium">{lead.asignado_nombre}</span>
-              </>
-            ) : (
-              <span className="text-slate-400 italic">Sin asignar</span>
-            )}
-          </div>
           <div className="flex items-center gap-1 text-slate-500">
             <Calendar className="w-3.5 h-3.5" />
             <span>{formatDate(lead.ultima_interaccion)}</span>
+          </div>
+          <div className="text-slate-400 italic text-xs">
+            Creado {formatDate(lead.created_at)}
           </div>
         </div>
       </div>

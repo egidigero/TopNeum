@@ -92,7 +92,6 @@ const ESTADO_PAGO_TURNO_LABELS: Record<string, string> = {
 
 export function PedidosTable({ pedidos }: PedidosTableProps) {
   const [searchTerm, setSearchTerm] = useState("")
-  const [estadoFilter, setEstadoFilter] = useState<string>("all")
   const [tipoEntregaFilter, setTipoEntregaFilter] = useState<string>("all")
   const [selectedPedido, setSelectedPedido] = useState<Pedido | null>(null)
 
@@ -103,12 +102,11 @@ export function PedidosTable({ pedidos }: PedidosTableProps) {
         pedido.cliente_telefono.includes(searchTerm) ||
         pedido.id.toLowerCase().includes(searchTerm.toLowerCase())
 
-      const matchesEstado = estadoFilter === "all" || pedido.estado_lead === estadoFilter
       const matchesTipoEntrega = tipoEntregaFilter === "all" || pedido.tipo_entrega === tipoEntregaFilter
 
-      return matchesSearch && matchesEstado && matchesTipoEntrega
+      return matchesSearch && matchesTipoEntrega
     })
-  }, [pedidos, searchTerm, estadoFilter, tipoEntregaFilter])
+  }, [pedidos, searchTerm, tipoEntregaFilter])
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("es-AR", {
@@ -171,19 +169,6 @@ export function PedidosTable({ pedidos }: PedidosTableProps) {
           </div>
 
           <select
-            value={estadoFilter}
-            onChange={(e) => setEstadoFilter(e.target.value)}
-            className="px-4 py-2 bg-white border border-slate-300 rounded-lg text-slate-900 text-sm min-w-[180px]"
-          >
-            <option value="all">Todos los estados</option>
-            <option value="pagado">✅ Pagado</option>
-            <option value="turno_pendiente">📅 Turno Pendiente</option>
-            <option value="turno_agendado">🗓️ Turno Agendado</option>
-            <option value="pedido_enviado">📦 En Camino</option>
-            <option value="pedido_finalizado">🎉 Finalizado</option>
-          </select>
-
-          <select
             value={tipoEntregaFilter}
             onChange={(e) => setTipoEntregaFilter(e.target.value)}
             className="px-4 py-2 bg-white border border-slate-300 rounded-lg text-slate-900 text-sm min-w-[160px]"
@@ -211,7 +196,6 @@ export function PedidosTable({ pedidos }: PedidosTableProps) {
                 <TableHead className="text-slate-700">Código</TableHead>
                 <TableHead className="text-slate-700">Teléfono</TableHead>
                 <TableHead className="text-slate-700">Región</TableHead>
-                <TableHead className="text-slate-700">Estado</TableHead>
                 <TableHead className="text-slate-700">Entrega</TableHead>
                 <TableHead className="text-slate-700">Turno</TableHead>
                 <TableHead className="text-slate-700 text-right">Total</TableHead>
@@ -222,7 +206,7 @@ export function PedidosTable({ pedidos }: PedidosTableProps) {
             <TableBody>
               {filteredPedidos.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={11} className="text-center text-slate-400 py-8">
+                  <TableCell colSpan={10} className="text-center text-slate-400 py-8">
                     No se encontraron pedidos
                   </TableCell>
                 </TableRow>
@@ -259,17 +243,12 @@ export function PedidosTable({ pedidos }: PedidosTableProps) {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Badge className={ESTADO_LEAD_COLORS[pedido.estado_lead] || "bg-slate-100 text-slate-600"}>
-                        {ESTADO_LEAD_LABELS[pedido.estado_lead] || pedido.estado_lead}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
                       <div className="flex flex-col gap-1">
                         <span className="text-slate-600 capitalize text-sm">
                           {pedido.tipo_entrega ? (
                             pedido.tipo_entrega === 'retiro' ? '🏪 Retiro' :
-                            pedido.tipo_entrega === 'colocacion' ? '� Colocación' :
-                            '� Envío'
+                            pedido.tipo_entrega === 'colocacion' ? '🔧 Colocación' :
+                            '📦 Envío'
                           ) : '⏳ Sin definir'}
                         </span>
                         {pedido.estado_turno && (

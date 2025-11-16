@@ -32,12 +32,9 @@ interface LeadDetailPanelProps {
     mensaje_inicial: string
     origen: string
     estado: string
-    asignado_a: string | null
-    asignado_nombre: string | null
     ultimo_contacto_at: string | null
     notas: string | null
     created_at: string
-    whatsapp_label?: string | null
     codigo_confirmacion?: string | null
     // Datos recolectados
     medida_neumatico?: string | null
@@ -47,19 +44,12 @@ interface LeadDetailPanelProps {
     forma_pago?: string | null
     ultimo_total?: number | null
     region?: string
-    // 🆕 Campos editables del cliente
-    email?: string | null
-    dni?: string | null
-    direccion?: string | null
-    localidad?: string | null
-    provincia?: string | null
-    codigo_postal?: string | null
-    // 🆕 Producto elegido (campos nuevos)
+    // Producto elegido
     producto_descripcion?: string | null
     forma_pago_detalle?: string | null
     cantidad?: number | null
     precio_final?: number | null
-    // 🆕 Información de turno
+    // Información de turno
     tiene_turno?: number | boolean
     turno_fecha?: string | null
     turno_hora?: string | null
@@ -78,13 +68,6 @@ export function LeadDetailPanel({ lead, users, currentUser, onClose, onUpdate, o
   const telefono = lead.telefono_whatsapp || lead.telefono || "Sin teléfono"
   
   const [notas, setNotas] = useState(lead.notas || "")
-  const [email, setEmail] = useState(lead.email || "")
-  const [dni, setDni] = useState(lead.dni || "")
-  const [direccion, setDireccion] = useState(lead.direccion || "")
-  const [localidad, setLocalidad] = useState(lead.localidad || "")
-  const [provincia, setProvincia] = useState(lead.provincia || "")
-  const [codigoPostal, setCodigoPostal] = useState(lead.codigo_postal || "")
-  const [editandoDatos, setEditandoDatos] = useState(false)
   const [pagos, setPagos] = useState<any[]>([])
   const [loadingPagos, setLoadingPagos] = useState(true)
   const [deleting, setDeleting] = useState(false)
@@ -109,18 +92,6 @@ export function LeadDetailPanel({ lead, users, currentUser, onClose, onUpdate, o
 
   const handleSaveNotas = async () => {
     onUpdate({ notas })
-  }
-
-  const handleSaveDatosCliente = async () => {
-    onUpdate({ 
-      email, 
-      dni, 
-      direccion, 
-      localidad, 
-      provincia, 
-      codigo_postal: codigoPostal 
-    })
-    setEditandoDatos(false)
   }
 
   const handleChangeEstado = async (nuevoEstado: string) => {
@@ -217,127 +188,6 @@ export function LeadDetailPanel({ lead, users, currentUser, onClose, onUpdate, o
                 <p className="text-sm text-slate-700">{lead.mensaje_inicial}</p>
               </div>
             )}
-          </div>
-
-          {/* Datos del Cliente - EDITABLES */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <label className="text-sm font-bold text-slate-700">Datos del Cliente</label>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => editandoDatos ? handleSaveDatosCliente() : setEditandoDatos(true)}
-                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-              >
-                {editandoDatos ? <><Save className="w-3 h-3 mr-1" /> Guardar</> : <><Edit className="w-3 h-3 mr-1" /> Editar</>}
-              </Button>
-            </div>
-            <div className="bg-white border-2 border-slate-200 rounded-lg p-3 space-y-2">
-              {editandoDatos ? (
-                <>
-                  <div>
-                    <label className="text-xs text-slate-500">Email</label>
-                    <Input 
-                      value={email} 
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="email@ejemplo.com"
-                      className="text-sm mt-1"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs text-slate-500">DNI</label>
-                    <Input 
-                      value={dni} 
-                      onChange={(e) => setDni(e.target.value)}
-                      placeholder="12345678"
-                      className="text-sm mt-1"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs text-slate-500">Dirección</label>
-                    <Input 
-                      value={direccion} 
-                      onChange={(e) => setDireccion(e.target.value)}
-                      placeholder="Calle y número"
-                      className="text-sm mt-1"
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="text-xs text-slate-500">Localidad</label>
-                      <Input 
-                        value={localidad} 
-                        onChange={(e) => setLocalidad(e.target.value)}
-                        placeholder="Ciudad"
-                        className="text-sm mt-1"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs text-slate-500">Provincia</label>
-                      <Input 
-                        value={provincia} 
-                        onChange={(e) => setProvincia(e.target.value)}
-                        placeholder="Provincia"
-                        className="text-sm mt-1"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="text-xs text-slate-500">Código Postal</label>
-                    <Input 
-                      value={codigoPostal} 
-                      onChange={(e) => setCodigoPostal(e.target.value)}
-                      placeholder="1234"
-                      className="text-sm mt-1"
-                    />
-                  </div>
-                </>
-              ) : (
-                <>
-                  {email && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-slate-600">Email:</span>
-                      <span className="text-slate-900 font-medium">{email}</span>
-                    </div>
-                  )}
-                  {dni && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-slate-600">DNI:</span>
-                      <span className="text-slate-900 font-medium">{dni}</span>
-                    </div>
-                  )}
-                  {direccion && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-slate-600">Dirección:</span>
-                      <span className="text-slate-900 font-medium">{direccion}</span>
-                    </div>
-                  )}
-                  {localidad && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-slate-600">Localidad:</span>
-                      <span className="text-slate-900 font-medium">{localidad}</span>
-                    </div>
-                  )}
-                  {provincia && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-slate-600">Provincia:</span>
-                      <span className="text-slate-900 font-medium">{provincia}</span>
-                    </div>
-                  )}
-                  {codigoPostal && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-slate-600">CP:</span>
-                      <span className="text-slate-900 font-medium">{codigoPostal}</span>
-                    </div>
-                  )}
-                  {!email && !dni && !direccion && !localidad && !provincia && !codigoPostal && (
-                    <div className="text-sm text-slate-400 text-center py-2">
-                      No hay datos del cliente aún
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
           </div>
 
           {/* Información Recolectada (consulta de producto) */}
