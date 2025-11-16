@@ -32,6 +32,7 @@ export default async function PedidosPage() {
       (SELECT cantidad FROM lead_consultas WHERE lead_id = l.id ORDER BY created_at DESC LIMIT 1) as cantidad_consulta,
       p.id as pedido_id,
       p.productos,
+      p.producto_descripcion,
       p.cantidad_total,
       p.forma_pago,
       p.subtotal,
@@ -91,6 +92,7 @@ export default async function PedidosPage() {
       notas: p.notas || null,
       // Datos del pedido
       productos: productos || null,
+      producto_descripcion: p.producto_descripcion || null,
       cantidad_total: Number(p.cantidad_total || p.cantidad_consulta || 0),
       forma_pago: String(p.forma_pago || p.forma_pago_consulta || 'Sin especificar'),
       subtotal: Number(p.subtotal || 0),

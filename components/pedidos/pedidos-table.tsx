@@ -28,6 +28,7 @@ interface Pedido {
   notas: string | null
   // Datos del pedido
   productos: any
+  producto_descripcion: string | null
   cantidad_total: number
   forma_pago: string
   subtotal: number
@@ -206,6 +207,7 @@ export function PedidosTable({ pedidos }: PedidosTableProps) {
             <TableHeader>
               <TableRow className="border-slate-200 hover:bg-slate-50">
                 <TableHead className="text-slate-700">Cliente</TableHead>
+                <TableHead className="text-slate-700">Producto</TableHead>
                 <TableHead className="text-slate-700">Código</TableHead>
                 <TableHead className="text-slate-700">Teléfono</TableHead>
                 <TableHead className="text-slate-700">Región</TableHead>
@@ -220,7 +222,7 @@ export function PedidosTable({ pedidos }: PedidosTableProps) {
             <TableBody>
               {filteredPedidos.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={10} className="text-center text-slate-400 py-8">
+                  <TableCell colSpan={11} className="text-center text-slate-400 py-8">
                     No se encontraron pedidos
                   </TableCell>
                 </TableRow>
@@ -228,6 +230,11 @@ export function PedidosTable({ pedidos }: PedidosTableProps) {
                 filteredPedidos.map((pedido) => (
                   <TableRow key={pedido.id} className="border-slate-200 hover:bg-slate-50">
                     <TableCell className="text-slate-900 font-medium">{pedido.cliente_nombre}</TableCell>
+                    <TableCell className="max-w-[200px]">
+                      <span className="text-slate-600 text-sm line-clamp-2">
+                        {pedido.producto_descripcion || 'Sin producto especificado'}
+                      </span>
+                    </TableCell>
                     <TableCell>
                       <Badge variant="outline" className="font-mono text-xs bg-slate-50 border-slate-300">
                         {pedido.codigo_confirmacion || 'Sin código'}

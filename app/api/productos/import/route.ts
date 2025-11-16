@@ -81,6 +81,71 @@ function parseCSV(text: string) {
   return out
 }
 
+// Parser que mantiene los headers originales (sin lowercase ni replace)
+function parseCSVWithOriginalHeaders(text: string) {
+  const firstLine = text.split('\n')[0] || ''
+  const commaCount = (firstLine.match(/,/g) || []).length
+  const semicolonCount = (firstLine.match(/;/g) || []).length
+  const delimiter = semicolonCount > commaCount ? ';' : ','
+
+  const rows: string[] = []
+  let cur = ''
+  let inQuotes = false
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i]
+    if (ch === '"') {
+      if (inQuotes && text[i + 1] === '"') {
+        cur += '"'
+        i++
+      } else {
+        inQuotes = !inQuotes
+      }
+    } else if (ch === '\n' && !inQuotes) {
+      rows.push(cur)
+      cur = ''
+    } else {
+      cur += ch
+    }
+  }
+  if (cur !== '') rows.push(cur)
+
+  const parsed: string[][] = rows.map(r => {
+    const cols: string[] = []
+    let c = ''
+    let q = false
+    for (let i = 0; i < r.length; i++) {
+      const ch = r[i]
+      if (ch === '"') {
+        if (q && r[i + 1] === '"') { c += '"'; i++ } else { q = !q }
+      } else if (ch === delimiter && !q) {
+        cols.push(c)
+        c = ''
+      } else {
+        c += ch
+      }
+    }
+    cols.push(c)
+    return cols.map(col => col.trim())
+  })
+
+  if (parsed.length === 0) return { headers: [], rows: [] }
+  
+  const headers = parsed[0] // Mantener headers originales
+  const dataRows: Record<string, string>[] = []
+  
+  for (let i = 1; i < parsed.length; i++) {
+    const row = parsed[i]
+    if (row.length === 1 && row[0] === '') continue // skip empty
+    const obj: Record<string, string> = {}
+    for (let j = 0; j < headers.length; j++) {
+      obj[headers[j]] = row[j] ?? ''
+    }
+    dataRows.push(obj)
+  }
+  
+  return { headers, rows: dataRows }
+}
+
 function computePricesFromCost(cost: number | null) {
   if (cost === null || cost === undefined || Number.isNaN(Number(cost))) return null
   const c = Number(cost)
@@ -111,12 +176,15 @@ export async function POST(request: NextRequest) {
 
     const contentType = request.headers.get('content-type') || ''
     let text = ''
+    let mapping: Record<string, string | null> = {}
+    
     if (contentType.includes('text/csv') || contentType.includes('application/csv')) {
       text = await request.text()
     } else if (contentType.includes('application/json')) {
-      // allow JSON with { csv: "..." }
+      // allow JSON with { csv: "...", mapping: {...} }
       const body = await request.json()
       text = body.csv || ''
+      mapping = body.mapping || {}
     } else {
       // Accept raw body as text
       text = await request.text()
@@ -126,11 +194,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Empty CSV body' }, { status: 400 })
     }
 
-    const rows = parseCSV(text)
-    appendLog(`[INFO] Import CSV rows parsed: ${rows.length}`)
-    if (rows.length > 0) {
-      const headers = Object.keys(rows[0])
-      appendLog(`[INFO] CSV headers detected (${headers.length}): ${headers.join(', ')}`)
+    // Parse CSV primero para obtener las filas con headers originales
+    const parsedData = parseCSVWithOriginalHeaders(text)
+    appendLog(`[INFO] Import CSV rows parsed: ${parsedData.rows.length}`)
+    appendLog(`[INFO] CSV headers detected (${parsedData.headers.length}): ${parsedData.headers.join(', ')}`)
+    
+    if (Object.keys(mapping).length > 0) {
+      appendLog(`[INFO] Using custom mapping: ${JSON.stringify(mapping)}`)
     }
 
     // expected headers (lowercased): sku,codigo,marca,familia,modelo,diseno,medida,costo,stock,precio_lista_base,activo
@@ -142,38 +212,57 @@ export async function POST(request: NextRequest) {
     const target = exists[0]?.tbl ? 'productos' : 'products'
     appendLog(`[INFO] CSV import target table: ${target}`)
 
+    // Helper para obtener valor usando el mapping
+    const getMappedValue = (r: Record<string, string>, expectedField: string): string => {
+      // Si hay mapping y el campo está mapeado, usar esa columna
+      if (mapping[expectedField]) {
+        return (r[mapping[expectedField]!] || '').trim()
+      }
+      
+      // Fallback: buscar por varios alias del campo
+      const aliases: Record<string, string[]> = {
+        'SKU': ['sku', 'SKU', 'codigo', 'CODIGO'],
+        'MARCA': ['marca', 'MARCA', 'brand'],
+        'FAMILIA': ['familia', 'FAMILIA', 'family'],
+        'DISEÑO': ['diseño', 'diseno', 'DISEÑO', 'DISENO', 'design'],
+        'MEDIDA': ['medida', 'MEDIDA', 'size'],
+        'INDICE': ['indice', 'INDICE', 'Indice', 'indice_de_carga', 'Indice de carga', 'index'],
+        'DESCRIPCION LARGA': ['descripcion_larga', 'DESCRIPCION LARGA', 'descripcion', 'description'],
+        'COSTO': ['costo', 'COSTO', 'cost'],
+        '3 CUOTAS': ['3_cuotas', '3 CUOTAS', 'cuota_3'],
+        '6 CUOTAS': ['6_cuotas', '6 CUOTAS', 'cuota_6'],
+        '12 CUOTAS': ['12_cuotas', '12 CUOTAS', 'cuota_12'],
+        'EFECTIVO BSAS': ['efectivo_bsas', 'EFECTIVO BSAS', 'efectivo_bsas_sin_iva'],
+        'EFECTIVO INT': ['efectivo_int', 'EFECTIVO INT', 'efectivo_int_sin_iva'],
+        'FACT MAYORISTA': ['fact_mayorista', 'FACT MAYORISTA', 'mayorista_fact'],
+        'SIN FACT MAYOR': ['sin_fact_mayor', 'SIN FACT MAYOR', 'mayorista_sin_fact'],
+        'STOCK': ['stock', 'STOCK'],
+      }
+      
+      const fieldAliases = aliases[expectedField] || []
+      for (const alias of fieldAliases) {
+        if (r[alias] !== undefined) {
+          return (r[alias] || '').trim()
+        }
+      }
+      
+      return ''
+    }
+
     let rowIndex = 0
-    for (const r of rows) {
+    for (const r of parsedData.rows) {
       rowIndex++
       let codigo = ''
       try {
-        codigo = (r['sku'] || r['SKU'] || r['codigo'] || '').trim()
-        const marca = (r['marca'] || r['MARCA'] || '').trim()
-        const familia = (r['familia'] || r['FAMILIA'] || '').trim()
-        // diseño puede venir con encoding corrupto de múltiples formas
-        const diseno = (
-          r['diseño'] || r['diseno'] || r['diseï¿½o'] || 
-          r['dise�o'] || r['diseio'] || r['DISEÑO'] || 
-          r['DISENO'] || r['diseno_linea'] ||
-          // Buscar cualquier key que contenga "dise" (case insensitive)
-          Object.keys(r).find(k => k.toLowerCase().includes('dise'))
-            ? r[Object.keys(r).find(k => k.toLowerCase().includes('dise'))!]
-            : ''
-        ).trim()
-        const medida = (r['medida'] || r['MEDIDA'] || '').trim()
+        codigo = getMappedValue(r, 'SKU')
+        const marca = getMappedValue(r, 'MARCA')
+        const familia = getMappedValue(r, 'FAMILIA')
+        const diseno = getMappedValue(r, 'DISEÑO')
+        const medida = getMappedValue(r, 'MEDIDA')
+        const indice = getMappedValue(r, 'INDICE')
         
-        // Separar medida e índice si vienen juntos (ej: "205/55R16-91H")
-        let medidaFinal = medida
-        let indice = ''
-        
-        if (medida.includes('-')) {
-          const partes = medida.split('-')
-          medidaFinal = partes[0].trim()
-          indice = partes[1]?.trim() || ''
-        }
-        
-        const descripcionLarga = (r['descripcion_larga'] || r['descripcion_larga'] || r['DESCRIPCION LARGA'] || '').trim()
-        const stock = (r['stock'] || r['STOCK'] || '').trim()
+        const descripcionLarga = getMappedValue(r, 'DESCRIPCION LARGA')
+        const stock = getMappedValue(r, 'STOCK')
         
         // Helper para limpiar precios: quita "$" y espacios
         // En formato argentino: "$ 98.785" significa 98785 (el punto es separador de miles)
@@ -190,20 +279,20 @@ export async function POST(request: NextRequest) {
           return isNaN(numero) ? null : numero
         }
 
-        const costo = limpiarPrecio(r['costo'] || r['COSTO'])
+        const costo = limpiarPrecio(getMappedValue(r, 'COSTO'))
         const activo = r['activo'] ? (r['activo'].toLowerCase() === 'true' || r['activo'] === '1') : true
 
-        // Read price fields directly from CSV (no automatic calculation)
-        const cuota3 = limpiarPrecio(r['3_cuotas'] || r['cuota_3'] || r['3 CUOTAS'] || r['3 cuotas'])
-        const cuota6 = limpiarPrecio(r['6_cuotas'] || r['cuota_6'] || r['6 CUOTAS'] || r['6 cuotas'])
-        const cuota12 = limpiarPrecio(r['12_cuotas'] || r['cuota_12'] || r['12 CUOTAS'] || r['12 cuotas'])
-        const efectivoBsas = limpiarPrecio(r['efectivo_bsas'] || r['efectivo_bsas_sin_iva'] || r['EFECTIVO BSAS'])
-        const efectivoInt = limpiarPrecio(r['efectivo_int'] || r['efectivo_int_sin_iva'] || r['EFECTIVO INT'])
-        const mayoristaFact = limpiarPrecio(r['fact_mayorista'] || r['mayorista_fact'] || r['FACT MAYORISTA'])
-        const mayoristaSinFact = limpiarPrecio(r['sin_fact_mayor'] || r['mayorista_sin_fact'] || r['SIN FACT MAYOR'])
+        // Read price fields directly from CSV using mapping
+        const cuota3 = limpiarPrecio(getMappedValue(r, '3 CUOTAS'))
+        const cuota6 = limpiarPrecio(getMappedValue(r, '6 CUOTAS'))
+        const cuota12 = limpiarPrecio(getMappedValue(r, '12 CUOTAS'))
+        const efectivoBsas = limpiarPrecio(getMappedValue(r, 'EFECTIVO BSAS'))
+        const efectivoInt = limpiarPrecio(getMappedValue(r, 'EFECTIVO INT'))
+        const mayoristaFact = limpiarPrecio(getMappedValue(r, 'FACT MAYORISTA'))
+        const mayoristaSinFact = limpiarPrecio(getMappedValue(r, 'SIN FACT MAYOR'))
 
         // Validaciones con fallbacks inteligentes
-        if (!codigo || !marca || !medidaFinal) {
+        if (!codigo || !marca || !medida) {
           results.errors.push({ 
             row: rowIndex, 
             error: `SKU: ${codigo || '(sin sku)'} - Faltan campos OBLIGATORIOS: sku, marca, medida` 
@@ -227,7 +316,7 @@ export async function POST(request: NextRequest) {
         // Generar descripcion_larga si no viene en el CSV
         let descripcion_larga = descripcionLarga
         if (!descripcion_larga) {
-          const descripcion_larga_parts = [medidaFinal, indice, diseno, marca].filter(Boolean)
+          const descripcion_larga_parts = [medida, indice, diseno, marca].filter(Boolean)
           descripcion_larga = descripcion_larga_parts.join(' ')
         }
 
@@ -259,7 +348,7 @@ export async function POST(request: NextRequest) {
               descripcion_larga, stock, moneda, created_at, updated_at
             )
             VALUES (
-              ${codigo}, ${marca}, ${familiaFinal}, ${diseno}, ${medidaFinal}, ${indice}, ${costo}, 
+              ${codigo}, ${marca}, ${familiaFinal}, ${diseno}, ${medida}, ${indice}, ${costo}, 
               ${cuota3}, ${cuota6}, ${cuota12},
               ${efectivoBsas}, ${efectivoInt}, 
               ${mayoristaFact}, ${mayoristaSinFact}, 

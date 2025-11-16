@@ -29,6 +29,7 @@ interface Producto {
   diseno: string
   modelo: string
   medida: string
+  indice: string | null
   codigo: string
   costo: number
   stock: string | number  // Puede ser número, "OK", o vacío
@@ -264,6 +265,7 @@ export function CatalogoTable({ productos, userRole, marcas, familiasPorMarca, m
                 <TableHead className="text-slate-700">Familia</TableHead>
                 <TableHead className="text-slate-700">Diseño</TableHead>
                 <TableHead className="text-slate-700">Medida</TableHead>
+                <TableHead className="text-slate-700">Índice</TableHead>
                 <TableHead className="text-slate-700 text-right">Stock</TableHead>
                 {canSeeCost && <TableHead className="text-slate-700 text-right">Costo</TableHead>}
                 <TableHead className="text-slate-700 text-right">3 cuotas</TableHead>
@@ -279,7 +281,7 @@ export function CatalogoTable({ productos, userRole, marcas, familiasPorMarca, m
             <TableBody>
               {filteredProductos.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={canSeeCost ? 15 : 14} className="text-center text-slate-500 py-8">
+                  <TableCell colSpan={canSeeCost ? 16 : 15} className="text-center text-slate-500 py-8">
                     No se encontraron productos
                   </TableCell>
                 </TableRow>
@@ -289,8 +291,17 @@ export function CatalogoTable({ productos, userRole, marcas, familiasPorMarca, m
                     <TableCell className="font-mono text-sm text-slate-700">{producto.codigo}</TableCell>
                     <TableCell className="text-slate-900 font-medium">{producto.marca}</TableCell>
                     <TableCell className="text-slate-700">{producto.familia}</TableCell>
-                    <TableCell className="text-slate-700">{producto.diseno}</TableCell>
-                    <TableCell className="text-slate-700">{producto.medida}</TableCell>
+                    <TableCell className="text-slate-700">{producto.diseno || '-'}</TableCell>
+                    <TableCell className="text-slate-700 font-medium">{producto.medida}</TableCell>
+                    <TableCell className="text-slate-700">
+                      {producto.indice ? (
+                        <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-300 font-mono text-xs">
+                          {producto.indice}
+                        </Badge>
+                      ) : (
+                        <span className="text-slate-400">-</span>
+                      )}
+                    </TableCell>
                     <TableCell className="text-right">
                       <Badge
                         variant={!tieneStock(producto.stock) ? "destructive" : "default"}

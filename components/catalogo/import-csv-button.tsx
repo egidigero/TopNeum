@@ -21,6 +21,7 @@ const EXPECTED_FIELDS = [
   "FAMILIA",
   "DISEÑO",
   "MEDIDA",
+  "INDICE",
   "DESCRIPCION LARGA",
   "COSTO",
   "3 CUOTAS",
@@ -149,6 +150,7 @@ export function ImportCsvButton({ userRole }: { userRole?: string | null }) {
           'FAMILIA': ['familia', 'family', 'categoria'],
           'DISEÑO': ['diseño', 'diseno', 'diseï¿½o', 'design', 'diseno_linea'],
           'MEDIDA': ['medida', 'size', 'dimension'],
+          'INDICE': ['indice', 'indice de carga', 'index', 'load_index'],
           'DESCRIPCION LARGA': ['descripcion_larga', 'descripcion larga', 'descripcion', 'description'],
           'COSTO': ['costo', 'cost', 'precio_costo'],
           '3 CUOTAS': ['3_cuotas', '3 cuotas', 'cuota_3', 'cuota3'],
@@ -326,6 +328,10 @@ export function ImportCsvButton({ userRole }: { userRole?: string | null }) {
                         <td className="text-slate-600">175/70R13</td>
                       </tr>
                       <tr>
+                        <td className="text-slate-700 font-medium pr-2">INDICE:</td>
+                        <td className="text-slate-600">84H</td>
+                      </tr>
+                      <tr>
                         <td className="text-slate-700 font-medium pr-2">COSTO:</td>
                         <td className="text-slate-600">$ 98.785</td>
                       </tr>
@@ -374,18 +380,22 @@ export function ImportCsvButton({ userRole }: { userRole?: string | null }) {
                   </div>
                 </div>
 
-            <div className="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <div>
-                <h4 className="font-medium text-sm mb-2 text-slate-900">Mapeo de columnas</h4>
-                <p className="text-xs text-slate-600 mb-3">Selecciona qué columna del CSV corresponde a cada campo.</p>
-                <div className="space-y-1.5 max-h-[300px] overflow-y-auto pr-2">
+            <div className="mt-6 space-y-6">
+              {/* Mapeo de columnas - ARRIBA */}
+              <div className="border border-slate-300 rounded-lg p-4 bg-slate-50">
+                <h4 className="font-semibold text-base mb-2 text-slate-900 flex items-center gap-2">
+                  <span className="text-lg">🔗</span>
+                  Mapeo de columnas
+                </h4>
+                <p className="text-sm text-slate-600 mb-4">Selecciona qué columna del CSV corresponde a cada campo de la base de datos.</p>
+                <div className="space-y-2 max-h-[350px] overflow-y-auto pr-2">
                   {EXPECTED_FIELDS.map(field => (
-                    <div key={field} className="flex items-center gap-2">
-                      <label className="w-32 text-xs font-mono text-slate-700">{field}</label>
+                    <div key={field} className="flex items-center gap-3 bg-white p-2.5 rounded border border-slate-200 hover:border-blue-300 transition-colors">
+                      <label className="w-40 text-sm font-semibold text-slate-700 flex-shrink-0">{field}</label>
                       <select
                         value={mapping[field] ?? ''}
                         onChange={e => handleMappingChange(field, e.target.value || null)}
-                        className="flex-1 bg-white text-slate-900 rounded border border-slate-300 px-2 py-1 text-xs"
+                        className="flex-1 bg-white text-slate-900 rounded border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       >
                         <option value="">(no provisto)</option>
                         {headers.map(h => (
@@ -397,8 +407,12 @@ export function ImportCsvButton({ userRole }: { userRole?: string | null }) {
                 </div>
               </div>
 
-              <div>
-                <h4 className="font-medium text-sm mb-2 text-slate-900">Vista previa (primeras 5 filas)</h4>
+              {/* Vista previa - ABAJO */}
+              <div className="border border-slate-300 rounded-lg p-4 bg-white">
+                <h4 className="font-semibold text-base mb-2 text-slate-900 flex items-center gap-2">
+                  <span className="text-lg">👁️</span>
+                  Vista previa de datos (primeras 5 filas)
+                </h4>
                 <div className="overflow-auto border border-slate-200 rounded max-h-[300px] bg-white">
                   <table className="w-full text-[10px] font-mono">
                     <thead className="sticky top-0 bg-slate-100">
@@ -427,8 +441,8 @@ export function ImportCsvButton({ userRole }: { userRole?: string | null }) {
                     </tbody>
                   </table>
                 </div>
-                <p className="text-xs text-slate-500 mt-1">
-                  Mostrando {Math.min(5, rows.length)} de {rows.length} filas. Primeras 5 columnas.
+                <p className="text-xs text-slate-500 mt-2">
+                  Mostrando {Math.min(5, rows.length)} de {rows.length} filas. Primeras 5 columnas de {headers.length} totales.
                 </p>
               </div>
             </div>
