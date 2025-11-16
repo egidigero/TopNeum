@@ -26,9 +26,11 @@ export async function POST(request: NextRequest) {
       nuevo_estado, 
       cambiado_por = 'agente_llm',
       // Campos específicos del cliente
+      nombre,              // 🆕 Nombre del cliente
       tipo_vehiculo,
       medida_neumatico,
       marca_preferida,
+      notas,               // 🆕 Notas o comentarios
       // 🆕 CAMPOS NUEVOS REFACTORIZADOS
       producto_descripcion,  // Texto largo: "Pirelli P400 185/60R15 Cinturato P1"
       forma_pago_detalle,    // Texto: "3 cuotas: $33,333" o "Transferencia: $100,000"
@@ -61,9 +63,11 @@ export async function POST(request: NextRequest) {
       telefono_whatsapp, 
       nuevo_estado,
       cambiado_por,
+      nombre,
       tipo_vehiculo,
       medida_neumatico,
-      marca_preferida
+      marca_preferida,
+      notas
     })
 
     // Validar teléfono
@@ -95,6 +99,30 @@ export async function POST(request: NextRequest) {
       SELECT get_or_create_lead(${telefono_whatsapp}) as lead_id
     `
     const lead_id = leadResult[0].lead_id
+
+    // 🆕 ACTUALIZAR NOMBRE DEL CLIENTE si viene
+    if (nombre) {
+      await sql`
+        UPDATE leads
+        SET nombre_cliente = ${nombre}
+        WHERE id = ${lead_id}
+      `
+      console.log('[n8n-estado] ✅ Nombre actualizado:', nombre)
+    }
+
+    // 🆕 AGREGAR NOTAS si vienen
+    if (notas) {
+      const timestamp = new Date().toISOString()
+      await sql`
+        UPDATE leads
+        SET notas = CONCAT(
+          COALESCE(notas, ''), 
+          ${`\n[${timestamp}] ${notas}`}
+        )
+        WHERE id = ${lead_id}
+      `
+      console.log('[n8n-estado] ✅ Notas agregadas:', notas)
+    }
 
     // Obtener estado actual
     const leadActual = await sql`
@@ -336,7 +364,6 @@ export async function POST(request: NextRequest) {
     const leadActualizado = await sql`
       SELECT 
         estado, 
-        whatsapp_label,
         codigo_confirmacion,
         nombre_cliente,
         region
@@ -349,9 +376,11 @@ export async function POST(request: NextRequest) {
     // (que puede tener delay o no estar disponible inmediatamente)
     const datosRecolectados: Record<string, any> = {}
     
+    if (nombre) datosRecolectados.nombre = nombre
     if (tipo_vehiculo) datosRecolectados.tipo_vehiculo = tipo_vehiculo
     if (medida_neumatico) datosRecolectados.medida_neumatico = medida_neumatico
     if (marca_preferida) datosRecolectados.marca_preferida = marca_preferida
+    if (notas) datosRecolectados.notas = notas
     
     // Si no hay datos directos, intentar obtener desde BD como fallback
     if (Object.keys(datosRecolectados).length === 0) {
@@ -381,7 +410,6 @@ export async function POST(request: NextRequest) {
       lead_id,
       estado_anterior: estadoAnterior,
       estado_nuevo: estadoFinal,
-      whatsapp_label: leadActualizado[0].whatsapp_label,
       codigo_confirmacion: leadActualizado[0].codigo_confirmacion, // 🆕 CÓDIGO para agendar turno
       nombre_cliente: leadActualizado[0].nombre_cliente,
       region: leadActualizado[0].region,
@@ -577,7 +605,6 @@ export async function GET(request: NextRequest) {
         nombre_cliente,
         region,
         estado,
-        whatsapp_label,
         codigo_confirmacion,
         created_at,
         updated_at,
