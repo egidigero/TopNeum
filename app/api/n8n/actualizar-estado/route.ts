@@ -110,35 +110,6 @@ export async function POST(request: NextRequest) {
       console.log('[n8n-estado] ✅ Nombre actualizado:', nombre)
     }
 
-    // 🆕 ACUMULAR TIPO_VEHICULO si viene (para múltiples consultas)
-    if (tipo_vehiculo) {
-      const vehiculoActual = await sql`
-        SELECT tipo_vehiculo FROM leads WHERE id = ${lead_id}
-      `
-      const vehiculoExistente = vehiculoActual[0]?.tipo_vehiculo || ''
-      
-      // Si ya existe y no incluye el nuevo, acumular
-      if (vehiculoExistente && !vehiculoExistente.includes(tipo_vehiculo)) {
-        const vehiculosAcumulados = `${vehiculoExistente} + ${tipo_vehiculo}`
-        await sql`
-          UPDATE leads
-          SET tipo_vehiculo = ${vehiculosAcumulados}
-          WHERE id = ${lead_id}
-        `
-        console.log('[n8n-estado] ✅ Vehículo acumulado:', vehiculosAcumulados)
-      } else if (!vehiculoExistente) {
-        // Primera vez, simplemente guardar
-        await sql`
-          UPDATE leads
-          SET tipo_vehiculo = ${tipo_vehiculo}
-          WHERE id = ${lead_id}
-        `
-        console.log('[n8n-estado] ✅ Vehículo guardado:', tipo_vehiculo)
-      } else {
-        console.log('[n8n-estado] ℹ️ Vehículo ya existe, no actualizar')
-      }
-    }
-
     // 🆕 AGREGAR NOTAS si vienen
     if (notas) {
       const timestamp = new Date().toISOString()

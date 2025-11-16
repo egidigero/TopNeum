@@ -152,39 +152,25 @@ function generarMensajeWhatsApp(productos: any[], medida: string, region: string
   const cantidad = productos.length
   const limite = Math.min(cantidad, 5) // Mostrar máximo 5 productos
 
-  let mensaje = `🔍 Encontramos ${cantidad} ${cantidad === 1 ? 'opción' : 'opciones'} para ${medida}\n`
+  let mensaje = `Claro! Para la medida ${medida} te puedo ofrecer las siguientes opciones:\n`
 
   for (let i = 0; i < limite; i++) {
     const p = productos[i]
-    const num = i + 1
-
-    mensaje += `━━━━━━━━━━━━━━━━━━━━━━\n`
-    mensaje += `🏆 OPCIÓN ${num} - ${p.marca} ${p.modelo}\n`
-    mensaje += `━━━━━━━━━━━━━━━━━━━━━━\n`
-    mensaje += `📦 Stock: Disponible (${p.stock} unidades)\n`
     
-    // Precios en cuotas
-    const total3 = p.precio_3_cuotas * 4
-    const total6 = p.precio_6_cuotas * 4
-    const total12 = p.precio_12_cuotas * 4
+    mensaje += `*${medida} ${p.modelo} ${p.marca}*\n`
     
-    mensaje += `💳 3 cuotas: $${p.precio_3_cuotas.toLocaleString('es-AR')} (Total: $${total3.toLocaleString('es-AR')})\n`
-    mensaje += `💳 6 cuotas: $${p.precio_6_cuotas.toLocaleString('es-AR')} (Total: $${total6.toLocaleString('es-AR')})\n`
-    mensaje += `💳 12 cuotas: $${p.precio_12_cuotas.toLocaleString('es-AR')} (Total: $${total12.toLocaleString('es-AR')})\n`
-    
-    // Precio contado según región
+    // Precios
+    const precio3Cuotas = p.precio_3_cuotas * 4
     const precioContado = region === "CABA" ? p.precio_contado_caba : p.precio_contado_interior
     const totalContado = precioContado * 4
     
-    mensaje += `💵 PROMO CONTADO ${region}: $${precioContado.toLocaleString('es-AR')}\n`
-    mensaje += `   (Total: $${totalContado.toLocaleString('es-AR')}) ⭐\n`
+    mensaje += `- 3 CUOTAS SIN INTERÉS: $${precio3Cuotas.toLocaleString('es-AR')}\n`
+    mensaje += `- PROMO CONTADO: $${totalContado.toLocaleString('es-AR')}\n`
   }
 
-  if (cantidad > 5) {
-    mensaje += `\n💡 Hay ${cantidad - 5} opciones más disponibles. ¿Querés que te las muestre?\n`
-  }
-
-  mensaje += `\n💡 ¿Cuál te interesa? También te puedo dar más info sobre cada marca.`
+  mensaje += `✅ Todos incluyen envío gratis a todo el país (llevando 2 o más).\n`
+  mensaje += `💳 Consultá por 6 y 12 cuotas.\n`
+  mensaje += `🛞 5 años de garantía oficial de fábrica.`
 
   return mensaje
 }

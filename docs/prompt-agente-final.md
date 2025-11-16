@@ -161,12 +161,11 @@ Dale! Te paso la cotización para el Cruze:
 ```
 
 **Sistema acumula:**
-- ✅ **Vehículos:** "Volkswagen Gol Trend + Chevrolet Cruze" (en tabla leads)
-- ✅ **Consulta 1:** Gol Trend - 185/60R15 (en tabla lead_consultas)
-- ✅ **Consulta 2:** Cruze - 205/55R16 (nueva fila en lead_consultas)
+- ✅ **Consulta 1:** Gol Trend - 185/60R15 (fila 1 en lead_consultas)
+- ✅ **Consulta 2:** Cruze - 205/55R16 (fila 2 en lead_consultas)
 - ✅ **Notas:** Historial con timestamps de cada consulta
 
-**💡 Resultado:** En el panel verás AMBOS vehículos y TODAS las medidas consultadas.
+**💡 Resultado:** En el panel verás TODAS las medidas consultadas en la tabla de consultas.
 
 ---
 
