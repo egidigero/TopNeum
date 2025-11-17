@@ -24,6 +24,7 @@ interface PedidoDetailPanelProps {
     notas: string | null
     // Datos del pedido
     productos: any
+    producto_descripcion?: string | null
     cantidad_total: number
     forma_pago: string
     subtotal: number
