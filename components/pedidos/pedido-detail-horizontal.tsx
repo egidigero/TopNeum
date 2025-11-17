@@ -285,55 +285,34 @@ export function PedidoDetailPanel({ pedido, onClose, onUpdate }: PedidoDetailPan
                 </div>
               </CardHeader>
               <CardContent className="pt-4">
-                {pedido.productos ? (
+                {(pedido.productos && Array.isArray(pedido.productos) && pedido.productos.length > 0) ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {Array.isArray(pedido.productos) ? (
-                      pedido.productos.map((prod: any, idx: number) => (
-                        <div key={idx} className="bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200 rounded-xl p-4">
-                          <div className="flex justify-between items-start gap-3">
-                            <div className="flex-1">
-                              <div className="font-bold text-slate-900 text-base">
-                                {prod.marca} {prod.modelo}
-                              </div>
-                              <div className="text-purple-700 font-semibold mt-1">{prod.medida}</div>
-                              {prod.descripcion && (
-                                <div className="text-xs text-slate-600 mt-2 leading-relaxed">{prod.descripcion}</div>
-                              )}
-                            </div>
-                            {prod.precio && (
-                              <div className="text-right flex-shrink-0">
-                                <div className="text-lg font-bold text-purple-700">{formatPrice(prod.precio)}</div>
-                                <div className="text-xs text-slate-500">por unidad</div>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      ))
-                    ) : typeof pedido.productos === 'object' ? (
-                      <div className="bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200 rounded-xl p-4">
+                    {pedido.productos.map((prod: any, idx: number) => (
+                      <div key={idx} className="bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200 rounded-xl p-4">
                         <div className="flex justify-between items-start gap-3">
                           <div className="flex-1">
                             <div className="font-bold text-slate-900 text-base">
-                              {pedido.productos.marca} {pedido.productos.modelo}
+                              {prod.marca} {prod.modelo}
                             </div>
-                            <div className="text-purple-700 font-semibold mt-1">{pedido.productos.medida}</div>
-                            {pedido.productos.descripcion && (
-                              <div className="text-xs text-slate-600 mt-2">{pedido.productos.descripcion}</div>
+                            <div className="text-purple-700 font-semibold mt-1">{prod.medida}</div>
+                            {prod.descripcion && (
+                              <div className="text-xs text-slate-600 mt-2 leading-relaxed">{prod.descripcion}</div>
                             )}
                           </div>
-                          {pedido.productos.precio && (
-                            <div className="text-right">
-                              <div className="text-lg font-bold text-purple-700">{formatPrice(pedido.productos.precio)}</div>
+                          {prod.precio && (
+                            <div className="text-right flex-shrink-0">
+                              <div className="text-lg font-bold text-purple-700">{formatPrice(prod.precio)}</div>
                               <div className="text-xs text-slate-500">por unidad</div>
                             </div>
                           )}
                         </div>
                       </div>
-                    ) : (
-                      <div className="col-span-2 bg-slate-50 border-2 border-slate-200 rounded-xl p-4">
-                        <pre className="text-xs text-slate-600 whitespace-pre-wrap">{JSON.stringify(pedido.productos, null, 2)}</pre>
-                      </div>
-                    )}
+                    ))}
+                  </div>
+                ) : pedido.producto_descripcion ? (
+                  <div className="bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200 rounded-xl p-4 text-center">
+                    <div className="font-bold text-slate-900 text-base mb-2">{pedido.producto_descripcion}</div>
+                    <div className="text-slate-500 text-xs">(Desde producto_descripcion)</div>
                   </div>
                 ) : (
                   <div className="bg-slate-50 border-2 border-dashed border-slate-300 rounded-xl p-8 text-center">
