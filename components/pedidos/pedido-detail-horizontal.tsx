@@ -312,8 +312,9 @@ export function PedidoDetailPanel({ pedido, onClose, onUpdate }: PedidoDetailPan
                   </div>
                 ) : pedido.producto_descripcion ? (
                   <div className="bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200 rounded-xl p-4 text-center">
-                    <div className="font-bold text-slate-900 text-base mb-2">{pedido.producto_descripcion}</div>
-                    <div className="text-slate-500 text-xs">(Desde producto_descripcion)</div>
+                    <div className="font-bold text-slate-900 text-lg mb-2">{pedido.producto_descripcion}</div>
+                    <div className="text-slate-800 text-base mb-1">Cantidad: <span className="font-bold">{pedido.cantidad_total}</span> unidad(es)</div>
+                    <div className="text-emerald-700 text-lg font-bold">Total: {formatPrice(pedido.total)}</div>
                   </div>
                 ) : (
                   <div className="bg-slate-50 border-2 border-dashed border-slate-300 rounded-xl p-8 text-center">
