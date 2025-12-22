@@ -66,7 +66,10 @@ export default async function LeadsPage() {
                   'producto_sku', pi.producto_sku,
                   'cantidad', pi.cantidad,
                   'precio_unitario', pi.precio_unitario,
-                  'producto_descripcion', p.descripcion
+                  'producto_descripcion', COALESCE(
+                    p.descripcion_larga,
+                    p.marca || ' ' || p.familia || ' ' || p.medida
+                  )
                 )
               ), '[]'::json)
               FROM pedido_items pi
