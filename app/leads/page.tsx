@@ -51,18 +51,40 @@ export default async function LeadsPage() {
         ), '[]'::json)
         FROM lead_cotizaciones lcot WHERE lcot.lead_id = l.id
       ) as cotizaciones,
+      -- Pedidos con items (para analytics)
+      (
+        SELECT COALESCE(json_agg(
+          json_build_object(
+            'id', lp.id,
+            'total', lp.total,
+            'forma_pago', lp.forma_pago,
+            'estado_pago', lp.estado_pago,
+            'created_at', lp.created_at,
+            'items', (
+              SELECT COALESCE(json_agg(
+                json_build_object(
+                  'producto_sku', pi.producto_sku,
+                  'cantidad', pi.cantidad,
+                  'precio_unitario', pi.precio_unitario,
+                  'producto_descripcion', p.descripcion
+                )
+              ), '[]'::json)
+              FROM pedido_items pi
+              LEFT JOIN products p ON p.sku = pi.producto_sku
+              WHERE pi.pedido_id = lp.id
+            )
+          ) ORDER BY lp.created_at DESC
+        ), '[]'::json)
+        FROM lead_pedidos lp
+        WHERE lp.lead_id = l.id
+      ) as pedidos,
       -- Última consulta para retrocompatibilidad
       (SELECT medida_neumatico FROM lead_consultas WHERE lead_id = l.id ORDER BY created_at DESC LIMIT 1) as medida_neumatico,
       (SELECT marca_preferida FROM lead_consultas WHERE lead_id = l.id ORDER BY created_at DESC LIMIT 1) as marca_preferida,
       (SELECT tipo_vehiculo FROM lead_consultas WHERE lead_id = l.id ORDER BY created_at DESC LIMIT 1) as tipo_vehiculo,
-      (SELECT tipo_uso FROM lead_consultas WHERE lead_id = l.id ORDER BY created_at DESC LIMIT 1) as tipo_uso,
       -- Datos adicionales de pedidos
       (SELECT forma_pago FROM lead_pedidos WHERE lead_id = l.id ORDER BY created_at DESC LIMIT 1) as forma_pago,
       (SELECT total FROM lead_pedidos WHERE lead_id = l.id ORDER BY created_at DESC LIMIT 1) as ultimo_total,
-      (SELECT producto_descripcion FROM lead_pedidos WHERE lead_id = l.id ORDER BY created_at DESC LIMIT 1) as producto_descripcion,
-      (SELECT forma_pago_detalle FROM lead_pedidos WHERE lead_id = l.id ORDER BY created_at DESC LIMIT 1) as forma_pago_detalle,
-      (SELECT cantidad_total FROM lead_pedidos WHERE lead_id = l.id ORDER BY created_at DESC LIMIT 1) as cantidad,
-      (SELECT precio_final FROM lead_pedidos WHERE lead_id = l.id ORDER BY created_at DESC LIMIT 1) as precio_final,
       -- Contadores
       (SELECT COUNT(*) FROM lead_consultas WHERE lead_id = l.id) as total_consultas,
       (SELECT COUNT(*) FROM lead_pedidos WHERE lead_id = l.id) as total_pedidos,
@@ -103,18 +125,21 @@ export default async function LeadsPage() {
       region: String(cot.region || 'INTERIOR'),
       created_at: String(cot.created_at),
     })) : [],
+    // Pedidos con items
+    pedidos: Array.isArray(l.pedidos) ? l.pedidos.map((p: any) => ({
+      id: String(p.id),
+      total: Number(p.total || 0),
+      forma_pago: String(p.forma_pago || ''),
+      estado_pago: p.estado_pago || null,
+      created_at: String(p.created_at),
+      items: Array.isArray(p.items) ? p.items : [],
+    })) : [],
     // Última consulta para retrocompatibilidad
     medida_neumatico: l.medida_neumatico || null,
     marca_preferida: l.marca_preferida || null,
     tipo_vehiculo: l.tipo_vehiculo || null,
-    tipo_uso: l.tipo_uso || null,
     forma_pago: l.forma_pago || null,
     ultimo_total: l.ultimo_total ? Number(l.ultimo_total) : null,
-    producto_descripcion: l.producto_descripcion || null,
-    forma_pago_detalle: l.forma_pago_detalle || null,
-    cantidad: l.cantidad ? Number(l.cantidad) : null,
-    precio_final: l.precio_final ? Number(l.precio_final) : null,
-    ultima_medida: l.medida_neumatico || null,
     // Contadores
     total_consultas: Number(l.total_consultas || 0),
     total_pedidos: Number(l.total_pedidos || 0),
