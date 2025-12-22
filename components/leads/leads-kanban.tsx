@@ -8,66 +8,7 @@ import { Search } from "lucide-react"
 import { LeadCard } from "./lead-card"
 import { LeadDetailPanel } from "./lead-detail-panel"
 import type { AuthUser } from "@/lib/auth"
-
-type LeadEstado =
-  | "nuevo"
-  | "en_conversacion"
-  | "cotizado"
-  | "esperando_pago"
-  | "pago_informado"
-  | "pedido_confirmado"
-  | "perdido"
-
-interface Lead {
-  id: string
-  nombre?: string
-  nombre_cliente?: string
-  telefono?: string
-  telefono_whatsapp?: string
-  canal: string
-  region: string
-  estado: LeadEstado
-  // 🆕 Consultas y cotizaciones (múltiples)
-  consultas?: Array<{
-    medida_neumatico: string
-    marca_preferida: string | null
-    tipo_vehiculo: string | null
-    cantidad: number
-  }> | null
-  cotizaciones?: Array<{
-    productos_mostrados: any
-    precio_total_contado: number
-    region: string
-  }> | null
-  // Datos recolectados (retrocompatibilidad - última consulta)
-  medida_neumatico: string | null
-  marca_preferida: string | null
-  tipo_vehiculo: string | null
-  tipo_uso: string | null
-  forma_pago: string | null
-  ultimo_total: number | null
-  // Contadores
-  total_consultas: number
-  total_pedidos: number
-  pagos_count: number
-  // Seguimiento
-  ultima_interaccion: string | null
-  created_at: string
-  origen: string
-  ultimo_contacto_at: string | null
-  mensaje_inicial: string
-  notas: string | null
-  // Campos nuevos de producto
-  producto_descripcion?: string | null
-  forma_pago_detalle?: string | null
-  cantidad?: number | null
-  precio_final?: number | null
-  // Campos de turno
-  tiene_turno?: number | boolean
-  turno_fecha?: string | null
-  turno_hora?: string | null
-  turno_estado?: string | null
-}
+import type { Lead, LeadEstado } from "@/lib/types/lead"
 
 interface LeadsKanbanProps {
   leads: Lead[]

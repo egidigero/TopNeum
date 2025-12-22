@@ -1,6 +1,6 @@
 import { getSession } from "@/lib/auth"
 import { sql } from "@/lib/db"
-import { LeadsKanban } from "@/components/leads/leads-kanban"
+import { LeadsViewWrapper } from "@/components/leads"
 import { Button } from "@/components/ui/button"
 import { Plus, ArrowLeft } from "lucide-react"
 import Link from "next/link"
@@ -179,7 +179,7 @@ export default async function LeadsPage() {
         </div>
       </div>
 
-      <LeadsKanban leads={leads} users={users} currentUser={user!} />
+      <LeadsViewWrapper leads={leads} users={users} currentUser={user!} />
     </div>
   )
 }

@@ -3,6 +3,10 @@ import { sql } from "@/lib/db"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Package, Users, ShoppingCart, DollarSign, TrendingUp, Calendar } from "lucide-react"
 import Image from "next/image"
+import { LeadsStats } from "@/components/leads/leads-stats"
+import { LeadsFunnel } from "@/components/leads/leads-funnel"
+import { LeadsTrendChart } from "@/components/leads/leads-trend-chart"
+import { LeadsTopProducts } from "@/components/leads/leads-top-products"
 
 export default async function DashboardPage() {
   const user = await getSession()
@@ -26,6 +30,65 @@ export default async function DashboardPage() {
     turnos_proximos = 0,
     leads_en_proceso = 0
   } = stats[0] || {}
+
+  // Obtener todos los leads para analytics
+  const leadsData = await sql`
+    SELECT 
+      l.id,
+      l.nombre,
+      l.telefono,
+      l.email,
+      l.estado,
+      l.region,
+      l.codigo_confirmacion,
+      l.medida_neumatico,
+      l.marca_preferida,
+      l.tipo_vehiculo,
+      l.notas,
+      l.created_at,
+      l.updated_at,
+      l.ultima_interaccion,
+      (
+        SELECT row_to_json(p.*) 
+        FROM (
+          SELECT 
+            lp.id,
+            lp.total,
+            lp.forma_pago,
+            lp.estado_pago,
+            lp.created_at,
+            (
+              SELECT json_agg(
+                json_build_object(
+                  'producto_sku', pi.producto_sku,
+                  'cantidad', pi.cantidad,
+                  'precio_unitario', pi.precio_unitario,
+                  'producto_descripcion', p.descripcion
+                )
+              )
+              FROM pedido_items pi
+              LEFT JOIN products p ON p.sku = pi.producto_sku
+              WHERE pi.pedido_id = lp.id
+            ) as items
+          FROM lead_pedidos lp
+          WHERE lp.lead_id = l.id
+          ORDER BY lp.created_at DESC
+          LIMIT 1
+        ) p
+      ) as ultimo_pedido
+    FROM leads l
+    WHERE l.estado NOT IN ('pedido_confirmado', 'perdido')
+    ORDER BY l.created_at DESC
+  `
+
+  // Transformar datos para los componentes de analytics
+  const leadsForAnalytics = leadsData.map((lead: any) => ({
+    ...lead,
+    ultimo_total: lead.ultimo_pedido?.total || null,
+    forma_pago: lead.ultimo_pedido?.forma_pago || null,
+    producto_descripcion: lead.ultimo_pedido?.items?.[0]?.producto_descripcion || null,
+    pedidos: lead.ultimo_pedido ? [lead.ultimo_pedido] : [],
+  }))
 
   return (
     <div className="p-8">
@@ -112,6 +175,25 @@ export default async function DashboardPage() {
             <p className="text-xs text-slate-500 mt-1">Desde hoy</p>
           </CardContent>
         </Card>
+      </div>
+
+      {/* Sistema de Analytics de Leads */}
+      <div className="mt-8">
+        <h2 className="text-2xl font-bold text-slate-900 mb-4">Analytics de Leads</h2>
+        
+        {/* Stats Cards */}
+        <LeadsStats leads={leadsForAnalytics} />
+
+        {/* Embudo de Conversión */}
+        <div className="mt-6">
+          <LeadsFunnel leads={leadsForAnalytics} />
+        </div>
+
+        {/* Gráficos */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+          <LeadsTrendChart leads={leadsForAnalytics} />
+          <LeadsTopProducts leads={leadsForAnalytics} />
+        </div>
       </div>
 
       <div className="mt-8">

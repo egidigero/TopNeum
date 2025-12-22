@@ -28,12 +28,12 @@ interface LeadDetailPanelProps {
     nombre_cliente?: string
     telefono?: string
     telefono_whatsapp?: string
-    canal: string
-    mensaje_inicial: string
-    origen: string
+    canal?: string
+    mensaje_inicial?: string
+    origen?: string
     estado: string
-    ultimo_contacto_at: string | null
-    notas: string | null
+    ultimo_contacto_at?: string | null
+    notas?: string | null
     created_at: string
     codigo_confirmacion?: string | null
     // Datos recolectados
