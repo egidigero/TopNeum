@@ -35,19 +35,19 @@ export default async function DashboardPage() {
   const leadsData = await sql`
     SELECT 
       l.id,
-      l.nombre,
-      l.telefono,
-      l.email,
+      l.nombre_cliente as nombre,
+      l.telefono_whatsapp as telefono,
       l.estado,
       l.region,
       l.codigo_confirmacion,
-      l.medida_neumatico,
-      l.marca_preferida,
-      l.tipo_vehiculo,
       l.notas,
       l.created_at,
       l.updated_at,
       l.ultima_interaccion,
+      -- Última consulta
+      (SELECT medida_neumatico FROM lead_consultas WHERE lead_id = l.id ORDER BY created_at DESC LIMIT 1) as medida_neumatico,
+      (SELECT marca_preferida FROM lead_consultas WHERE lead_id = l.id ORDER BY created_at DESC LIMIT 1) as marca_preferida,
+      (SELECT tipo_vehiculo FROM lead_consultas WHERE lead_id = l.id ORDER BY created_at DESC LIMIT 1) as tipo_vehiculo,
       (
         SELECT row_to_json(p.*) 
         FROM (
@@ -63,7 +63,10 @@ export default async function DashboardPage() {
                   'producto_sku', pi.producto_sku,
                   'cantidad', pi.cantidad,
                   'precio_unitario', pi.precio_unitario,
-                  'producto_descripcion', p.descripcion
+                  'producto_descripcion', COALESCE(
+                    p.descripcion_larga,
+                    p.marca || ' ' || p.familia || ' ' || p.medida
+                  )
                 )
               )
               FROM pedido_items pi
