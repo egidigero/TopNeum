@@ -2,54 +2,62 @@ import { NextRequest, NextResponse } from "next/server"
 import { sql } from "@/lib/db"
 
 /**
- * Endpoint para n8n - Actualizar estado del lead
+ * Endpoint REFACTORIZADO para n8n - Actualizar estado del lead
+ * 
+ * ⚠️ SISTEMA DE VALIDACIÓN INTERNA
+ * El agente YA NO envía precios ni descripciones de productos.
+ * Solo envía SKUs y el sistema calcula TODO automáticamente desde la tabla products.
+ * 
+ * Esto garantiza:
+ * - Precios siempre correctos (vienen de la BD)
+ * - No hay errores de tipeo del agente
+ * - Los cálculos son exactos
+ * - Escalable a miles de pedidos sin revisar manualmente
  * 
  * Input esperado:
  * {
  *   telefono_whatsapp: "+54 9 11 1234 5678",
- *   nuevo_estado: "cotizacion_enviada",
- *   cambiado_por: "agente_llm",
- *   datos_adicionales: { ... }
+ *   
+ *   // FASE 1: CONSULTA
+ *   medida_neumatico: "185/60R15",
+ *   marca_preferida: "Yokohama",
+ *   tipo_vehiculo: "Volkswagen Gol",
+ *   cantidad: 4,
+ *   notas: "Cliente pregunta por garantía",
+ *   
+ *   // FASE 2: PEDIDO CONFIRMADO
+ *   items_pedido: [
+ *     { sku: "YOK-BLUEARTH-185-60-15", cantidad: 4 }
+ *   ],
+ *   forma_pago: "3_cuotas",  // 3_cuotas | 6_cuotas | 12_cuotas | transferencia_sin_factura | etc
+ *   
+ *   // OPCIONAL: Resumen que confirma el cliente
+ *   resumen_pedido: "Cliente confirma: 4 Yokohama BLUEARTH 185/60R15 en 3 cuotas"
  * }
  */
 export async function POST(request: NextRequest) {
   try {
-    // Validar API Key (opcional - comentado para desarrollo)
-    // const apiKey = request.headers.get('x-api-key')
-    // if (apiKey !== process.env.N8N_API_KEY) {
-    //   return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    // }
-
     const body = await request.json()
     let { 
       telefono_whatsapp, 
       nuevo_estado, 
-      cambiado_por = 'agente_llm',
-      // Campos específicos del cliente
-      nombre,              // 🆕 Nombre del cliente
+      // Datos del cliente
+      nombre,
       tipo_vehiculo,
+      notas,
+      // CONSULTA
       medida_neumatico,
       marca_preferida,
-      notas,               // 🆕 Notas o comentarios
-      // 🆕 CAMPOS NUEVOS REFACTORIZADOS
-      producto_descripcion,  // Texto largo: "Pirelli P400 185/60R15 Cinturato P1"
-      forma_pago_detalle,    // Texto: "3 cuotas: $33,333" o "Transferencia: $100,000"
       cantidad,
-      precio_final,
-      // Campos legacy (mantener por compatibilidad temporal)
-      producto_marca,
-      producto_modelo,
-      producto_medida,
-      producto_diseno,
-      precio_unitario,
-      forma_pago,
-      datos_adicionales 
+      // PEDIDO (SKUs validados)
+      items_pedido,  // [{ sku: "ABC-123", cantidad: 4 }]
+      forma_pago,    // Enum
+      resumen_pedido // Texto opcional del agente
     } = body
 
-    // Normalizar teléfono (eliminar espacios y guiones)
+    // Normalizar teléfono
     if (telefono_whatsapp) {
       telefono_whatsapp = String(telefono_whatsapp).replace(/[\s\-()]/g, '')
-      // Asegurar formato con +
       if (!telefono_whatsapp.startsWith('+')) {
         if (telefono_whatsapp.startsWith('54')) {
           telefono_whatsapp = '+' + telefono_whatsapp
@@ -59,40 +67,18 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    console.log('[n8n-estado] 📝 Actualizando estado:', { 
-      telefono_whatsapp, 
-      nuevo_estado,
-      cambiado_por,
-      nombre,
-      tipo_vehiculo,
-      medida_neumatico,
-      marca_preferida,
-      notas
-    })
-
-    // Validar teléfono
     if (!telefono_whatsapp) {
       return NextResponse.json({ 
         error: 'telefono_whatsapp es requerido' 
       }, { status: 400 })
     }
 
-    // Validar estado
-    const estadosValidos = [
-      'nuevo',
-      'en_conversacion',
-      'cotizado',
-      'esperando_pago',
-      'pago_informado',
-      'pedido_confirmado',
-      'perdido'
-    ]
-
-    if (nuevo_estado && !estadosValidos.includes(nuevo_estado)) {
-      return NextResponse.json({ 
-        error: `Estado inválido. Debe ser uno de: ${estadosValidos.join(', ')}` 
-      }, { status: 400 })
-    }
+    console.log('[n8n-estado-v2] 📝 Procesando:', { 
+      telefono: telefono_whatsapp, 
+      estado: nuevo_estado,
+      tiene_consulta: !!medida_neumatico,
+      tiene_pedido: !!(items_pedido?.length)
+    })
 
     // Obtener o crear lead
     const leadResult = await sql`
@@ -100,283 +86,344 @@ export async function POST(request: NextRequest) {
     `
     const lead_id = leadResult[0].lead_id
 
-    // 🆕 ACTUALIZAR NOMBRE DEL CLIENTE si viene
+    // Actualizar nombre si viene
     if (nombre) {
       await sql`
         UPDATE leads
-        SET nombre_cliente = ${nombre}
+        SET nombre_cliente = ${nombre}, updated_at = NOW()
         WHERE id = ${lead_id}
       `
-      console.log('[n8n-estado] ✅ Nombre actualizado:', nombre)
     }
 
-    // 🆕 AGREGAR NOTAS si vienen
+    // Actualizar notas si vienen
     if (notas) {
-      const timestamp = new Date().toISOString()
-      // Obtener notas actuales primero
-      const notasActuales = await sql`
-        SELECT notas FROM leads WHERE id = ${lead_id}
-      `
-      const notasExistentes = notasActuales[0]?.notas || ''
-      const nuevaNota = `\n[${timestamp}] ${notas}`
-      const notasActualizadas = notasExistentes + nuevaNota
-      
       await sql`
         UPDATE leads
-        SET notas = ${notasActualizadas}
+        SET 
+          notas = CASE 
+            WHEN notas IS NULL THEN ${notas}
+            ELSE notas || E'\n\n' || ${notas}
+          END,
+          updated_at = NOW()
         WHERE id = ${lead_id}
       `
-      console.log('[n8n-estado] ✅ Notas agregadas:', notas)
     }
 
-    // Obtener estado actual
-    const leadActual = await sql`
-      SELECT estado FROM leads WHERE id = ${lead_id}
-    `
-    const estadoAnterior = leadActual[0]?.estado
+    // DETERMINAR ESTADO
+    const estadosValidos = [
+      'nuevo', 'en_conversacion', 'cotizado', 
+      'esperando_pago', 'pago_informado', 'pedido_confirmado', 'perdido'
+    ]
 
-    // 🆕 LÓGICA AUTOMÁTICA DE ESTADOS:
-    // Si llega producto_descripcion y no hay estado especificado → 'esperando_pago'
-    let estadoFinal = nuevo_estado
-    if (!nuevo_estado && producto_descripcion) {
-      estadoFinal = 'esperando_pago'
-      console.log('[n8n-estado] 🔄 Auto-estado: esperando_pago (producto confirmado)')
-    } else if (!nuevo_estado) {
-      estadoFinal = estadoAnterior // Mantener estado actual
+    let estadoFinal = nuevo_estado && estadosValidos.includes(nuevo_estado) 
+      ? nuevo_estado 
+      : 'en_conversacion'
+
+    // Auto-determinar estado según lo que se envía
+    if (items_pedido && items_pedido.length > 0) {
+      estadoFinal = 'esperando_pago' // Tiene pedido confirmado
+    } else if (medida_neumatico) {
+      estadoFinal = 'cotizado' // Consultó productos
     }
 
-    // Actualizar estado
     await sql`
       UPDATE leads
-      SET 
-        estado = ${estadoFinal},
-        updated_at = NOW(),
-        ultima_interaccion = NOW()
+      SET estado = ${estadoFinal}, updated_at = NOW(), ultima_interaccion = NOW()
       WHERE id = ${lead_id}
     `
 
-    // Guardar información del cliente en lead_consultas
-    if (tipo_vehiculo || medida_neumatico || marca_preferida) {
-      console.log('[n8n-estado] 💾 Guardando datos del cliente:', { tipo_vehiculo, medida_neumatico, marca_preferida })
+    // ===================
+    // GUARDAR CONSULTA
+    // ===================
+    if (medida_neumatico) {
+      console.log('[n8n-estado-v2] 📋 Guardando consulta:', medida_neumatico, marca_preferida || '')
       
-      // 🆕 LÓGICA MEJORADA: Si viene medida nueva, crear consulta nueva
-      if (medida_neumatico) {
-        // Verificar si ya existe una consulta con esta medida
-        const consultaMismamedida = await sql`
-          SELECT id FROM lead_consultas 
-          WHERE lead_id = ${lead_id} 
-          AND medida_neumatico = ${medida_neumatico}
-          LIMIT 1
-        `
-
-        if (consultaMismamedida.length > 0) {
-          // Ya existe consulta con esta medida → actualizar
-          console.log('[n8n-estado] 🔄 Actualizando consulta existente para medida:', medida_neumatico)
-          const consultaId = consultaMismamedida[0].id
-          
-          await sql`
-            UPDATE lead_consultas 
-            SET 
-              tipo_vehiculo = COALESCE(${tipo_vehiculo}, tipo_vehiculo),
-              marca_preferida = COALESCE(${marca_preferida}, marca_preferida),
-              updated_at = NOW()
-            WHERE id = ${consultaId}
-          `
-        } else {
-          // Nueva medida → crear nueva consulta
-          console.log('[n8n-estado] 🆕 Creando nueva consulta para medida:', medida_neumatico)
-          
-          await sql`
-            INSERT INTO lead_consultas (lead_id, tipo_vehiculo, medida_neumatico, marca_preferida)
-            VALUES (
-              ${lead_id},
-              ${tipo_vehiculo || null},
-              ${medida_neumatico},
-              ${marca_preferida || null}
-            )
-          `
-        }
-      } else {
-        // Solo vienen tipo_vehiculo o marca_preferida (sin medida)
-        // Actualizar la última consulta
-        const ultimaConsulta = await sql`
-          SELECT id FROM lead_consultas 
-          WHERE lead_id = ${lead_id} 
-          ORDER BY created_at DESC 
-          LIMIT 1
-        `
-
-        if (ultimaConsulta.length > 0) {
-          await sql`
-            UPDATE lead_consultas 
-            SET 
-              tipo_vehiculo = COALESCE(${tipo_vehiculo}, tipo_vehiculo),
-              marca_preferida = COALESCE(${marca_preferida}, marca_preferida),
-              updated_at = NOW()
-            WHERE id = ${ultimaConsulta[0].id}
-          `
-        } else {
-          // No hay consultas todavía, crear una nueva
-          await sql`
-            INSERT INTO lead_consultas (lead_id, tipo_vehiculo, medida_neumatico, marca_preferida)
-            VALUES (
-              ${lead_id},
-              ${tipo_vehiculo || null},
-              ${medida_neumatico || null},
-              ${marca_preferida || null}
-            )
-          `
-        }
-      }
+      // SIEMPRE insertar nueva consulta
+      // Permite múltiples consultas de la misma medida con diferentes marcas
+      // Ej: Cliente consulta 185/60R15 Yokohama, luego 185/60R15 Pirelli → 2 registros
+      await sql`
+        INSERT INTO lead_consultas (
+          lead_id, 
+          medida_neumatico, 
+          marca_preferida, 
+          tipo_vehiculo,
+          cantidad
+        )
+        VALUES (
+          ${lead_id},
+          ${medida_neumatico},
+          ${marca_preferida || null},
+          ${tipo_vehiculo || null},
+          ${cantidad || 4}
+        )
+      `
       
-      console.log('[n8n-estado] ✅ Consulta guardada')
+      console.log('[n8n-estado-v2] ✅ Consulta guardada')
     }
 
-    // Guardar información del pedido (producto elegido, precio, etc)
-    if (producto_descripcion || precio_final) {
-      console.log('[n8n-estado] 💰 Guardando datos del pedido')
+    // Actualizar tipo_vehiculo sin medida (para última consulta)
+    if (tipo_vehiculo && !medida_neumatico) {
+      await sql`
+        UPDATE lead_consultas
+        SET tipo_vehiculo = ${tipo_vehiculo}, updated_at = NOW()
+        WHERE lead_id = ${lead_id}
+        AND id = (
+          SELECT id FROM lead_consultas 
+          WHERE lead_id = ${lead_id}
+          ORDER BY created_at DESC 
+          LIMIT 1
+        )
+      `
+    }
+
+    // ===================
+    // GUARDAR PEDIDO CON VALIDACIÓN DE SKUs
+    // ===================
+    if (items_pedido && Array.isArray(items_pedido) && items_pedido.length > 0) {
+      console.log('[n8n-estado-v2] 💰 Procesando pedido con', items_pedido.length, 'items')
       
-      // Buscar pedido existente
+      // Validar forma de pago
+      const formasPagoValidas = [
+        '3_cuotas', '6_cuotas', '12_cuotas',
+        'transferencia_con_factura', 'transferencia_sin_factura',
+        'efectivo_con_factura', 'efectivo_sin_factura'
+      ]
+      
+      const formaPagoFinal = forma_pago && formasPagoValidas.includes(forma_pago) 
+        ? forma_pago 
+        : '3_cuotas'
+      
+      // Determinar columna de precio según forma de pago
+      const columnaPrecio = 
+        formaPagoFinal === '3_cuotas' ? 'cuota_3' :
+        formaPagoFinal === '6_cuotas' ? 'cuota_6' :
+        formaPagoFinal === '12_cuotas' ? 'cuota_12' :
+        formaPagoFinal.includes('transferencia') ? 'mayorista_sin_fact' :
+        'efectivo_bsas_sin_iva'
+      
+      // VALIDAR CADA SKU Y OBTENER PRECIOS REALES DE LA BD
+      const itemsValidados = []
+      let precioTotal = 0
+      let cantidadTotal = 0
+      const descripcionParts = []
+      
+      for (const item of items_pedido) {
+        const { sku, cantidad: cantItem } = item
+        
+        if (!sku || !cantItem || cantItem <= 0) {
+          console.error('[n8n-estado-v2] ❌ Item inválido:', item)
+          continue
+        }
+        
+        // Buscar producto en BD - AQUÍ SE VALIDA TODO
+        let productoResult
+        
+        if (formaPagoFinal === '3_cuotas') {
+          productoResult = await sql`
+            SELECT sku, marca, familia, medida, indice, cuota_3 as precio_unitario
+            FROM products WHERE sku = ${sku} AND tiene_stock = true LIMIT 1
+          `
+        } else if (formaPagoFinal === '6_cuotas') {
+          productoResult = await sql`
+            SELECT sku, marca, familia, medida, indice, cuota_6 as precio_unitario
+            FROM products WHERE sku = ${sku} AND tiene_stock = true LIMIT 1
+          `
+        } else if (formaPagoFinal === '12_cuotas') {
+          productoResult = await sql`
+            SELECT sku, marca, familia, medida, indice, cuota_12 as precio_unitario
+            FROM products WHERE sku = ${sku} AND tiene_stock = true LIMIT 1
+          `
+        } else if (formaPagoFinal.includes('transferencia')) {
+          productoResult = await sql`
+            SELECT sku, marca, familia, medida, indice, mayorista_sin_fact as precio_unitario
+            FROM products WHERE sku = ${sku} AND tiene_stock = true LIMIT 1
+          `
+        } else {
+          productoResult = await sql`
+            SELECT sku, marca, familia, medida, indice, efectivo_bsas_sin_iva as precio_unitario
+            FROM products WHERE sku = ${sku} AND tiene_stock = true LIMIT 1
+          `
+        }
+        
+        if (productoResult.length === 0) {
+          console.error('[n8n-estado-v2] ❌ SKU no encontrado o sin stock:', sku)
+          return NextResponse.json({
+            error: `Producto con SKU ${sku} no encontrado o sin stock`
+          }, { status: 400 })
+        }
+        
+        const producto = productoResult[0]
+        const precioUnitario = parseFloat(producto.precio_unitario) || 0
+        
+        if (precioUnitario === 0) {
+          console.error('[n8n-estado-v2] ❌ Producto sin precio:', sku)
+          return NextResponse.json({
+            error: `Producto ${sku} no tiene precio configurado para ${formaPagoFinal}`
+          }, { status: 400 })
+        }
+        
+        const subtotal = precioUnitario * cantItem
+        
+        itemsValidados.push({
+          sku: producto.sku,
+          cantidad: cantItem,
+          precio_unitario: precioUnitario,
+          subtotal
+        })
+        
+        precioTotal += subtotal
+        cantidadTotal += cantItem
+        
+        // Generar descripción automática: "Yokohama BLUEARTH 185/60R15 84H x4"
+        const desc = [
+          producto.marca,
+          producto.familia,
+          producto.medida,
+          producto.indice
+        ].filter(Boolean).join(' ')
+        
+        descripcionParts.push(cantItem > 1 ? `${desc} x${cantItem}` : desc)
+      }
+      
+      if (itemsValidados.length === 0) {
+        return NextResponse.json({
+          error: 'No se pudo validar ningún item del pedido'
+        }, { status: 400 })
+      }
+      
+      const productoDescripcion = descripcionParts.join(' + ')
+      
+      // Generar forma_pago_detalle legible
+      const formaPagoDetalle = 
+        formaPagoFinal === '3_cuotas' ? `3 cuotas: $${(precioTotal / 3).toLocaleString('es-AR', {maximumFractionDigits: 0})} c/u` :
+        formaPagoFinal === '6_cuotas' ? `6 cuotas: $${(precioTotal / 6).toLocaleString('es-AR', {maximumFractionDigits: 0})} c/u` :
+        formaPagoFinal === '12_cuotas' ? `12 cuotas: $${(precioTotal / 12).toLocaleString('es-AR', {maximumFractionDigits: 0})} c/u` :
+        formaPagoFinal.includes('transferencia') ? `Transferencia: $${precioTotal.toLocaleString('es-AR', {maximumFractionDigits: 0})}` :
+        `Efectivo: $${precioTotal.toLocaleString('es-AR', {maximumFractionDigits: 0})}`
+      
+      // Buscar si ya existe un pedido pendiente
       const pedidoExistente = await sql`
-        SELECT id FROM lead_pedidos 
-        WHERE lead_id = ${lead_id} 
-        ORDER BY created_at DESC 
+        SELECT id FROM lead_pedidos
+        WHERE lead_id = ${lead_id}
+        AND estado_pago IN ('pendiente')
+        ORDER BY created_at DESC
         LIMIT 1
       `
-
+      
+      let pedidoId
+      
       if (pedidoExistente.length > 0) {
-        console.log('[n8n-estado] 🔄 Actualizando pedido existente')
-        
-        // Obtener valores actuales
-        const pedidoActual = await sql`
-          SELECT * FROM lead_pedidos 
-          WHERE id = ${pedidoExistente[0].id}
-        `
-        const pedido = pedidoActual[0]
-        
-        // 🆕 USAR CAMPOS NUEVOS (producto_descripcion, forma_pago_detalle)
-        // Si vienen campos legacy, convertirlos a nuevo formato
-        let descripcionFinal = producto_descripcion
-        if (!descripcionFinal && producto_marca) {
-          descripcionFinal = [producto_marca, producto_modelo, producto_medida, producto_diseno]
-            .filter(Boolean)
-            .join(' ')
-        }
-        
-        let formaPagoFinal = forma_pago_detalle
-        if (!formaPagoFinal && forma_pago) {
-          formaPagoFinal = forma_pago // backward compatibility
-        }
-        
-        // Merge: mantener valores existentes, actualizar solo los nuevos
-        // ⚠️ Para cantidad: si el cliente corrige, SIEMPRE actualizar (incluso si es menor)
-        const cantidadFinal = cantidad !== undefined && cantidad !== null 
-          ? cantidad 
-          : pedido.cantidad_total
+        // Actualizar pedido existente
+        pedidoId = pedidoExistente[0].id
         
         await sql`
-          UPDATE lead_pedidos 
-          SET 
-            producto_descripcion = ${descripcionFinal || pedido.producto_descripcion},
-            forma_pago_detalle = ${formaPagoFinal || pedido.forma_pago_detalle},
-            precio_final = ${precio_final || pedido.precio_final},
-            cantidad_total = ${cantidadFinal}
-          WHERE id = ${pedidoExistente[0].id}
+          UPDATE lead_pedidos
+          SET
+            cantidad_total = ${cantidadTotal},
+            forma_pago = ${formaPagoFinal},
+            total = ${precioTotal},
+            precio_final = ${precioTotal},
+            producto_descripcion = ${productoDescripcion},
+            forma_pago_detalle = ${formaPagoDetalle},
+            updated_at = NOW()
+          WHERE id = ${pedidoId}
         `
         
-        console.log('[n8n-estado] ✅ Pedido actualizado')
+        // Eliminar items anteriores y crear nuevos
+        await sql`DELETE FROM pedido_items WHERE pedido_id = ${pedidoId}`
+        
+        console.log('[n8n-estado-v2] 🔄 Pedido actualizado:', pedidoId)
       } else {
-        console.log('[n8n-estado] 🆕 Creando nuevo pedido')
-        
-        // 🆕 Convertir campos legacy si es necesario
-        let descripcionFinal = producto_descripcion
-        if (!descripcionFinal && producto_marca) {
-          descripcionFinal = [producto_marca, producto_modelo, producto_medida, producto_diseno]
-            .filter(Boolean)
-            .join(' ')
-        }
-        
-        let formaPagoFinal = forma_pago_detalle || forma_pago || null
-        
-        // 🔧 Mapear forma_pago_detalle a valores válidos de la BD
-        // La BD solo acepta: transferencia_con_factura, transferencia_sin_factura, 
-        // efectivo_con_factura, efectivo_sin_factura, 3_cuotas, 6_cuotas, 12_cuotas
-        const mapearFormaPago = (texto: string | null): string => {
-          if (!texto) return '3_cuotas' // default
-          
-          const textoLower = texto.toLowerCase()
-          
-          // Detectar cuotas
-          if (textoLower.includes('3') && textoLower.includes('cuota')) return '3_cuotas'
-          if (textoLower.includes('6') && textoLower.includes('cuota')) return '6_cuotas'
-          if (textoLower.includes('12') && textoLower.includes('cuota')) return '12_cuotas'
-          
-          // Detectar transferencia
-          if (textoLower.includes('transferencia')) {
-            if (textoLower.includes('con factura') || textoLower.includes('con_factura')) {
-              return 'transferencia_con_factura'
-            }
-            return 'transferencia_sin_factura' // default sin factura
-          }
-          
-          // Detectar efectivo
-          if (textoLower.includes('efectivo') || textoLower.includes('contado')) {
-            if (textoLower.includes('con factura') || textoLower.includes('con_factura')) {
-              return 'efectivo_con_factura'
-            }
-            return 'efectivo_sin_factura' // default sin factura
-          }
-          
-          // Default: 3 cuotas
-          return '3_cuotas'
-        }
-        
-        const formaPagoBD = mapearFormaPago(formaPagoFinal)
-        
         // Crear nuevo pedido
-        // 🔧 NOTA: Todos los campos NOT NULL de lead_pedidos deben tener valores
-        const cantidadFinal = cantidad || 4
-        const precioFinalCalc = precio_final || 0
-        
-        await sql`
+        const nuevoPedido = await sql`
           INSERT INTO lead_pedidos (
-            lead_id, 
-            productos,
+            lead_id,
             cantidad_total,
             forma_pago,
-            subtotal,
             total,
-            estado_pago,
+            precio_final,
             producto_descripcion,
             forma_pago_detalle,
-            precio_final
+            estado_pago
           )
           VALUES (
             ${lead_id},
-            ${JSON.stringify([])},
-            ${cantidadFinal},
-            ${formaPagoBD},
-            ${precioFinalCalc},
-            ${precioFinalCalc},
-            'pendiente',
-            ${descripcionFinal || null},
+            ${cantidadTotal},
             ${formaPagoFinal},
-            ${precioFinalCalc}
+            ${precioTotal},
+            ${precioTotal},
+            ${productoDescripcion},
+            ${formaPagoDetalle},
+            'pendiente'
           )
+          RETURNING id
         `
         
-        console.log('[n8n-estado] ✅ Pedido creado')
+        pedidoId = nuevoPedido[0].id
+        console.log('[n8n-estado-v2] 🆕 Pedido creado:', pedidoId)
       }
+      
+      // Insertar items validados con SKUs (FOREIGN KEY a products.sku)
+      for (const item of itemsValidados) {
+        await sql`
+          INSERT INTO pedido_items (pedido_id, producto_sku, cantidad, precio_unitario)
+          VALUES (${pedidoId}, ${item.sku}, ${item.cantidad}, ${item.precio_unitario})
+        `
+      }
+      
+      // Guardar resumen del pedido en notas si viene
+      if (resumen_pedido) {
+        await sql`
+          UPDATE leads
+          SET 
+            notas = CASE 
+              WHEN notas IS NULL THEN ${resumen_pedido}
+              ELSE notas || E'\n\n[PEDIDO CONFIRMADO]\n' || ${resumen_pedido}
+            END
+          WHERE id = ${lead_id}
+        `
+      }
+      
+      console.log('[n8n-estado-v2] ✅ Pedido guardado con', itemsValidados.length, 'items')
+      console.log('[n8n-estado-v2] 💵 Total calculado: $', precioTotal.toLocaleString('es-AR'))
+      
+      // Generar mensaje automático para el agente
+      const mensajePedido = generarMensajePedido(itemsValidados, formaPagoFinal, precioTotal, cantidadTotal)
+      
+      // Obtener estado actualizado
+      const leadActualizado = await sql`
+        SELECT 
+          id,
+          estado, 
+          codigo_confirmacion,
+          nombre_cliente,
+          region
+        FROM leads 
+        WHERE id = ${lead_id}
+      `
+
+      return NextResponse.json({
+        success: true,
+        lead_id: lead_id,
+        estado: leadActualizado[0].estado,
+        codigo_confirmacion: leadActualizado[0].codigo_confirmacion,
+        pedido: {
+          id: pedidoId,
+          items: itemsValidados,
+          total: precioTotal,
+          cantidad_total: cantidadTotal,
+          forma_pago: formaPagoDetalle,
+          producto_descripcion: productoDescripcion
+        },
+        mensaje_formateado: mensajePedido,  // ← MENSAJE AUTOMÁTICO
+        mensaje: 'Pedido guardado correctamente'
+      })
     }
 
-    // Procesar datos adicionales según el estado (legacy - mantener por compatibilidad)
-    if (datos_adicionales) {
-      await procesarDatosAdicionales(lead_id, nuevo_estado, datos_adicionales)
-    }
-
-    // Obtener label de WhatsApp actualizado Y código de confirmación
+    // Si solo actualizó consulta o datos
     const leadActualizado = await sql`
       SELECT 
+        id,
         estado, 
         codigo_confirmacion,
         nombre_cliente,
@@ -385,280 +432,60 @@ export async function POST(request: NextRequest) {
       WHERE id = ${lead_id}
     `
 
-    // 🔍 Construir datos_recolectados desde los valores que acabamos de procesar
-    // Esto asegura que devolvemos lo que el usuario envió, no lo que está en BD
-    // (que puede tener delay o no estar disponible inmediatamente)
-    const datosRecolectados: Record<string, any> = {}
-    
-    if (nombre) datosRecolectados.nombre = nombre
-    if (tipo_vehiculo) datosRecolectados.tipo_vehiculo = tipo_vehiculo
-    if (medida_neumatico) datosRecolectados.medida_neumatico = medida_neumatico
-    if (marca_preferida) datosRecolectados.marca_preferida = marca_preferida
-    if (notas) datosRecolectados.notas = notas
-    
-    // Si no hay datos directos, intentar obtener desde BD como fallback
-    if (Object.keys(datosRecolectados).length === 0) {
-      const consultaActual = await sql`
-        SELECT 
-          tipo_vehiculo,
-          medida_neumatico,
-          marca_preferida
-        FROM lead_consultas 
-        WHERE lead_id = ${lead_id}
-        ORDER BY created_at DESC
-        LIMIT 1
-      `
-      
-      if (consultaActual.length > 0) {
-        if (consultaActual[0].tipo_vehiculo) datosRecolectados.tipo_vehiculo = consultaActual[0].tipo_vehiculo
-        if (consultaActual[0].medida_neumatico) datosRecolectados.medida_neumatico = consultaActual[0].medida_neumatico
-        if (consultaActual[0].marca_preferida) datosRecolectados.marca_preferida = consultaActual[0].marca_preferida
-      }
-    }
-
-    console.log('[n8n-estado] ✅ Estado actualizado:', leadActualizado[0])
-    console.log('[n8n-estado] 📊 Datos recolectados:', datosRecolectados)
-
     return NextResponse.json({
       success: true,
-      lead_id,
-      estado_anterior: estadoAnterior,
-      estado_nuevo: estadoFinal,
-      codigo_confirmacion: leadActualizado[0].codigo_confirmacion, // 🆕 CÓDIGO para agendar turno
-      nombre_cliente: leadActualizado[0].nombre_cliente,
-      region: leadActualizado[0].region,
-      datos_recolectados: datosRecolectados, // 🆕 Datos del cliente
-      timestamp: new Date().toISOString()
+      lead_id: lead_id,
+      estado: leadActualizado[0].estado,
+      codigo_confirmacion: leadActualizado[0].codigo_confirmacion,
+      mensaje: 'Estado actualizado correctamente'
     })
 
   } catch (error: any) {
-    console.error('[n8n-estado] ❌ Error:', error)
+    console.error('[n8n-estado-v2] ❌ Error:', error)
     return NextResponse.json({ 
-      error: error.message || 'Error interno del servidor' 
+      error: error.message || 'Error interno del servidor',
+      details: error.stack
     }, { status: 500 })
   }
 }
 
 /**
- * Procesar datos adicionales según el estado
+ * Genera mensaje automático para confirmar pedido
+ * Similar a buscar_productos, devuelve texto listo para WhatsApp
  */
-async function procesarDatosAdicionales(
-  lead_id: string, 
-  estado: string, 
-  datos: any
-) {
-  console.log('[procesarDatosAdicionales] Lead:', lead_id, 'Estado:', estado, 'Datos:', datos)
-
-  // SIEMPRE actualizar campos básicos del lead si vienen en datos
-  try {
-    if (datos.nombre_cliente) {
-      await sql`
-        UPDATE leads
-        SET nombre_cliente = ${datos.nombre_cliente}
-        WHERE id = ${lead_id}
-      `
-      console.log('[procesarDatosAdicionales] ✅ Actualizado nombre_cliente')
-    }
-    
-    if (datos.region) {
-      await sql`
-        UPDATE leads
-        SET region = ${datos.region}
-        WHERE id = ${lead_id}
-      `
-      console.log('[procesarDatosAdicionales] ✅ Actualizado region')
-    }
-  } catch (err) {
-    console.error('[procesarDatosAdicionales] Error actualizando lead básico:', err)
+function generarMensajePedido(
+  items: Array<{sku: string, cantidad: number, precio_unitario: number, subtotal: number}>,
+  formaPago: string,
+  total: number,
+  cantidadTotal: number
+): string {
+  const emoji = '✅'
+  
+  let mensaje = `${emoji} *PEDIDO CONFIRMADO*\n\n`
+  mensaje += `📦 *RESUMEN:*\n`
+  
+  // Listar items (sin detalles técnicos, solo lo importante)
+  items.forEach((item, index) => {
+    mensaje += `${index + 1}. ${item.cantidad} unidades - $${item.subtotal.toLocaleString('es-AR')}\n`
+  })
+  
+  mensaje += `\n━━━━━━━━━━━━━━━━━\n`
+  mensaje += `💰 *TOTAL: $${total.toLocaleString('es-AR')}*\n`
+  
+  // Forma de pago
+  if (formaPago === '3_cuotas') {
+    mensaje += `💳 3 cuotas de $${(total / 3).toLocaleString('es-AR', {maximumFractionDigits: 0})}\n`
+  } else if (formaPago === '6_cuotas') {
+    mensaje += `💳 6 cuotas de $${(total / 6).toLocaleString('es-AR', {maximumFractionDigits: 0})}\n`
+  } else if (formaPago === '12_cuotas') {
+    mensaje += `💳 12 cuotas de $${(total / 12).toLocaleString('es-AR', {maximumFractionDigits: 0})}\n`
+  } else if (formaPago.includes('transferencia')) {
+    mensaje += `💵 Transferencia bancaria\n`
+  } else {
+    mensaje += `💵 Efectivo\n`
   }
-
-  // Guardar en lead_consultas si hay info de producto
-  if (datos.tipo_vehiculo || datos.medida_neumatico || datos.marca_preferida) {
-    try {
-      await sql`
-        INSERT INTO lead_consultas (
-          lead_id,
-          medida_neumatico,
-          marca_preferida,
-          tipo_vehiculo,
-          tipo_uso
-        )
-        VALUES (
-          ${lead_id},
-          ${datos.medida_neumatico || null},
-          ${datos.marca_preferida || null},
-          ${datos.tipo_vehiculo || null},
-          ${datos.tipo_uso || null}
-        )
-      `
-      console.log('[procesarDatosAdicionales] ✅ Guardado en lead_consultas')
-    } catch (err) {
-      console.error('[procesarDatosAdicionales] Error guardando consulta:', err)
-    }
-  }
-
-  // Procesar según el estado específico
-  switch (estado) {
-    case 'consulta_producto':
-      // Ya se guardó en lead_consultas arriba
-      break
-
-    case 'cotizacion_enviada':
-      // Registrar cotización
-      if (datos.productos_mostrados) {
-        await sql`
-          INSERT INTO lead_cotizaciones (
-            lead_id,
-            productos_mostrados,
-            region,
-            precio_total_3cuotas,
-            precio_total_contado
-          )
-          VALUES (
-            ${lead_id},
-            ${JSON.stringify(datos.productos_mostrados)},
-            ${datos.region || 'CABA'},
-            ${datos.precio_total_3cuotas || null},
-            ${datos.precio_total_contado || null}
-          )
-        `
-      }
-      break
-
-    case 'en_proceso_de_pago':
-      // Crear pedido pendiente
-      if (datos.productos && datos.forma_pago) {
-        await sql`
-          INSERT INTO lead_pedidos (
-            lead_id,
-            productos,
-            cantidad_total,
-            forma_pago,
-            subtotal,
-            descuento_porcentaje,
-            descuento_monto,
-            total,
-            requiere_sena,
-            monto_sena
-          )
-          VALUES (
-            ${lead_id},
-            ${JSON.stringify(datos.productos)},
-            ${datos.cantidad_total || 4},
-            ${datos.forma_pago},
-            ${datos.subtotal},
-            ${datos.descuento_porcentaje || 0},
-            ${datos.descuento_monto || 0},
-            ${datos.total},
-            ${datos.requiere_sena || false},
-            ${datos.monto_sena || null}
-          )
-        `
-      }
-      break
-
-    case 'turno_agendado':
-      // Actualizar información de entrega/colocación
-      if (datos.tipo_entrega) {
-        // Buscar pedido del lead
-        const pedido = await sql`
-          SELECT id FROM lead_pedidos 
-          WHERE lead_id = ${lead_id} 
-          ORDER BY created_at DESC 
-          LIMIT 1
-        `
-
-        if (pedido.length > 0) {
-          await sql`
-            INSERT INTO lead_entregas (
-              pedido_id,
-              lead_id,
-              tipo_entrega,
-              fecha_turno,
-              hora_turno,
-              direccion_envio
-            )
-            VALUES (
-              ${pedido[0].id},
-              ${lead_id},
-              ${datos.tipo_entrega},
-              ${datos.fecha_turno || null},
-              ${datos.hora_turno || null},
-              ${datos.direccion_envio ? JSON.stringify(datos.direccion_envio) : null}
-            )
-          `
-        }
-      }
-      break
-  }
-}
-
-// GET endpoint para consultar estado actual
-export async function GET(request: NextRequest) {
-  try {
-    // Validar API Key (opcional - comentado para desarrollo)
-    // const apiKey = request.headers.get('x-api-key')
-    // if (apiKey !== process.env.N8N_API_KEY) {
-    //   return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    // }
-
-    const { searchParams } = new URL(request.url)
-    const telefono = searchParams.get('telefono')
-
-    if (!telefono) {
-      return NextResponse.json({ 
-        error: 'telefono query param es requerido' 
-      }, { status: 400 })
-    }
-
-    // Buscar lead
-    const lead = await sql`
-      SELECT 
-        id,
-        telefono_whatsapp,
-        nombre_cliente,
-        region,
-        estado,
-        codigo_confirmacion,
-        created_at,
-        updated_at,
-        ultima_interaccion
-      FROM leads
-      WHERE telefono_whatsapp = ${telefono}
-    `
-
-    if (lead.length === 0) {
-      return NextResponse.json({ 
-        exists: false,
-        message: 'Lead no encontrado'
-      })
-    }
-
-    // Obtener información adicional
-    const consultas = await sql`
-      SELECT * FROM lead_consultas WHERE lead_id = ${lead[0].id} ORDER BY created_at DESC
-    `
-
-    const cotizaciones = await sql`
-      SELECT * FROM lead_cotizaciones WHERE lead_id = ${lead[0].id} ORDER BY created_at DESC
-    `
-
-    const pedidos = await sql`
-      SELECT * FROM lead_pedidos WHERE lead_id = ${lead[0].id} ORDER BY created_at DESC
-    `
-
-    return NextResponse.json({
-      exists: true,
-      lead: lead[0],
-      consultas,
-      cotizaciones,
-      pedidos
-    })
-
-  } catch (error: any) {
-    console.error('[n8n-estado] ❌ Error GET:', error)
-    return NextResponse.json({ 
-      error: error.message || 'Error interno del servidor' 
-    }, { status: 500 })
-  }
+  
+  mensaje += `\n🎯 *Siguiente paso:* Te envío los datos para coordinar el pago.`
+  
+  return mensaje
 }

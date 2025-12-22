@@ -57,24 +57,61 @@ export async function GET(request: NextRequest) {
 
     const consulta = consultaResult.length > 0 ? consultaResult[0] : null
 
-    // Obtener información del pedido (producto elegido, precio, etc)
+    // Obtener información del pedido más reciente
     const pedidoResult = await sql`
       SELECT 
-        producto_elegido_marca,
-        producto_elegido_modelo,
-        producto_elegido_medida,
-        producto_elegido_diseno,
-        precio_unitario,
-        precio_final,
-        cantidad_total,
-        forma_pago
+        id,
+        forma_pago,
+        estado,
+        created_at
       FROM lead_pedidos
       WHERE lead_id = ${lead.id}
       ORDER BY created_at DESC
       LIMIT 1
     `
 
-    const pedido = pedidoResult.length > 0 ? pedidoResult[0] : null
+    let pedidoInfo = null
+    
+    if (pedidoResult.length > 0) {
+      const pedido = pedidoResult[0]
+      
+      // Obtener items del pedido con información de productos
+      const itemsResult = await sql`
+        SELECT 
+          pi.cantidad,
+          pi.precio_unitario,
+          pi.subtotal,
+          p.marca,
+          p.familia as modelo,
+          p.medida,
+          p.indice
+        FROM pedido_items pi
+        INNER JOIN products p ON pi.producto_sku = p.sku
+        WHERE pi.pedido_id = ${pedido.id}
+        ORDER BY pi.id
+      `
+
+      // Calcular totales
+      const cantidadTotal = itemsResult.reduce((sum: number, item: any) => sum + item.cantidad, 0)
+      const precioTotal = itemsResult.reduce((sum: number, item: any) => sum + parseFloat(item.subtotal), 0)
+
+      pedidoInfo = {
+        id: pedido.id,
+        forma_pago: pedido.forma_pago,
+        estado: pedido.estado,
+        cantidad_total: cantidadTotal,
+        precio_total: precioTotal,
+        items: itemsResult.map((item: any) => ({
+          marca: item.marca,
+          modelo: item.modelo,
+          medida: item.medida,
+          indice: item.indice,
+          cantidad: item.cantidad,
+          precio_unitario: parseFloat(item.precio_unitario),
+          subtotal: parseFloat(item.subtotal)
+        }))
+      }
+    }
 
     // Verificar si ya tiene turno agendado
     const turnoResult = await sql`
@@ -98,8 +135,8 @@ export async function GET(request: NextRequest) {
       success: true,
       lead: {
         id: lead.id,
-        nombre: lead.nombre_cliente,
-        telefono: lead.telefono_whatsapp,
+        nombre_cliente: lead.nombre_cliente,
+        telefono_whatsapp: lead.telefono_whatsapp,
         email: lead.email,
         region: lead.region,
         codigo: lead.codigo_confirmacion,
@@ -110,18 +147,7 @@ export async function GET(request: NextRequest) {
         medida: consulta.medida_neumatico,
         marca_preferida: consulta.marca_preferida
       } : null,
-      pedido: pedido ? {
-        producto: {
-          marca: pedido.producto_elegido_marca,
-          modelo: pedido.producto_elegido_modelo,
-          medida: pedido.producto_elegido_medida,
-          diseno: pedido.producto_elegido_diseno
-        },
-        precio_unitario: pedido.precio_unitario,
-        precio_final: pedido.precio_final,
-        cantidad: pedido.cantidad_total,
-        forma_pago: pedido.forma_pago
-      } : null,
+      pedido: pedidoInfo,
       turno_existente: turnoExistente
     })
 

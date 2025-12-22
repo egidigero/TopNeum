@@ -77,7 +77,7 @@ export default function AgendarTurnoPage() {
         marca_vehiculo: "",
         modelo_vehiculo: "",
         patente: "",
-        cantidad_neumaticos: data.pedido?.cantidad?.toString() || "4",
+        cantidad_neumaticos: data.pedido?.cantidad_total?.toString() || "4",
         observaciones: "",
       })
       
