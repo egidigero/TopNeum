@@ -22,27 +22,35 @@ export default async function PedidosPage() {
       (SELECT medida_neumatico FROM lead_consultas WHERE lead_id = l.id ORDER BY created_at DESC LIMIT 1) as medida_neumatico,
       (SELECT marca_preferida FROM lead_consultas WHERE lead_id = l.id ORDER BY created_at DESC LIMIT 1) as marca_preferida,
       (SELECT tipo_vehiculo FROM lead_consultas WHERE lead_id = l.id ORDER BY created_at DESC LIMIT 1) as tipo_vehiculo,
-      (SELECT forma_pago FROM lead_consultas WHERE lead_id = l.id ORDER BY created_at DESC LIMIT 1) as forma_pago_consulta,
       (SELECT cantidad FROM lead_consultas WHERE lead_id = l.id ORDER BY created_at DESC LIMIT 1) as cantidad_consulta,
       p.id as pedido_id,
-      p.productos,
-      p.producto_descripcion,
-      p.cantidad_total,
       p.forma_pago,
-      p.subtotal,
-      p.descuento_porcentaje,
       p.total,
       p.estado_pago,
-      p.comprobante_url,
       p.created_at as fecha_pedido,
-      p.fecha_pago,
+      -- Items del pedido
+      (
+        SELECT json_agg(
+          json_build_object(
+            'producto_sku', pi.producto_sku,
+            'cantidad', pi.cantidad,
+            'precio_unitario', pi.precio_unitario,
+            'producto_descripcion', COALESCE(
+              pr.descripcion_larga,
+              pr.marca || ' ' || pr.familia || ' ' || pr.medida
+            )
+          )
+        )
+        FROM pedido_items pi
+        LEFT JOIN products pr ON pr.sku = pi.producto_sku
+        WHERE pi.pedido_id = p.id
+      ) as items,
       -- Datos de turno/envío (tabla turnos unificada)
       t.id as turno_id,
       t.tipo as tipo_entrega,
       t.fecha as fecha_turno,
       t.hora_inicio as hora_turno,
-      t.estado as estado_turno,
-      t.estado_pago as turno_estado_pago,
+      t.estado_turno as estado_turno,
       t.observaciones,
       t.datos_envio,
       -- Extraer datos del cliente desde datos_envio JSONB (si existe)
@@ -62,16 +70,15 @@ export default async function PedidosPage() {
   `
 
   const pedidos = pedidosRaw.map((p: any) => {
-    // Obtener productos: primero de lead_pedidos.productos, si no construir desde consultas
-    let productos = p.productos
-    if (!productos && (p.medida_neumatico || p.marca_preferida)) {
+    // Obtener productos desde items o construir desde consultas
+    let productos = p.items || []
+    if (productos.length === 0 && (p.medida_neumatico || p.marca_preferida)) {
       // Construir producto desde datos de consultas como ARRAY
       productos = [{
-        marca: p.marca_preferida || 'Sin marca',
-        modelo: '',
-        medida: p.medida_neumatico || '',
-        precio: p.total || 0,
-        descripcion: `${p.tipo_vehiculo || ''} - ${p.cantidad_consulta || ''} neumáticos`.trim()
+        producto_sku: null,
+        cantidad: p.cantidad_consulta || 4,
+        precio_unitario: p.total ? p.total / (p.cantidad_consulta || 4) : 0,
+        producto_descripcion: `${p.marca_preferida || 'Sin marca'} ${p.medida_neumatico || ''} - ${p.tipo_vehiculo || ''}`.trim()
       }]
     }
 
@@ -90,29 +97,22 @@ export default async function PedidosPage() {
       localidad: p.localidad || null,
       provincia: p.provincia || null,
       codigo_postal: p.codigo_postal || null,
+      // Productos
+      productos: productos,
       notas: p.notas || null,
       // Datos del pedido
-      productos: productos || null,
-      producto_descripcion: p.producto_descripcion || null,
-      cantidad_total: Number(p.cantidad_total || p.cantidad_consulta || 0),
-      forma_pago: String(p.forma_pago || p.forma_pago_consulta || 'Sin especificar'),
-      subtotal: Number(p.subtotal || 0),
-      descuento_porcentaje: Number(p.descuento_porcentaje || 0),
+      forma_pago: String(p.forma_pago || 'Sin especificar'),
       total: Number(p.total || 0),
       estado_pago: String(p.estado_pago || 'confirmado'),
-      comprobante_url: p.comprobante_url || null,
       fecha_pedido: p.fecha_pedido ? String(p.fecha_pedido) : new Date().toISOString(),
-      fecha_pago: p.fecha_pago ? String(p.fecha_pago) : null,
       // Turno/Envío
       turno_id: p.turno_id ? String(p.turno_id) : null,
       tipo_entrega: p.tipo_entrega || null,
       fecha_turno: p.fecha_turno ? String(p.fecha_turno) : null,
       hora_turno: p.hora_turno ? String(p.hora_turno) : null,
       estado_turno: p.estado_turno || null,
-      turno_estado_pago: p.turno_estado_pago || 'pendiente',
       observaciones: p.observaciones || null,
       datos_envio: p.datos_envio || null,
-      items_count: Number(p.cantidad_total || p.cantidad_consulta || 0),
     }
   })
 

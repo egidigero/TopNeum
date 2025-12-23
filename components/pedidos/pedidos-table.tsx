@@ -28,25 +28,18 @@ interface Pedido {
   notas: string | null
   // Datos del pedido
   productos: any
-  producto_descripcion: string | null
-  cantidad_total: number
   forma_pago: string
-  subtotal: number
-  descuento_porcentaje: number
   total: number
   estado_pago: string
   fecha_pedido: string
-  fecha_pago: string | null
   // Turno/Envío
   turno_id: string | null
   tipo_entrega: string | null
   fecha_turno: string | null
   hora_turno: string | null
   estado_turno: string | null
-  turno_estado_pago: string
   observaciones: string | null
   datos_envio: any
-  items_count: number
 }
 
 interface PedidosTableProps {
@@ -216,7 +209,7 @@ export function PedidosTable({ pedidos }: PedidosTableProps) {
                     <TableCell className="text-slate-900 font-medium">{pedido.cliente_nombre}</TableCell>
                     <TableCell className="max-w-[200px]">
                       <span className="text-slate-600 text-sm line-clamp-2">
-                        {pedido.producto_descripcion || 'Sin producto especificado'}
+                        {pedido.productos?.[0]?.producto_descripcion || 'Sin producto especificado'}
                       </span>
                     </TableCell>
                     <TableCell>
@@ -271,15 +264,13 @@ export function PedidosTable({ pedidos }: PedidosTableProps) {
                               {pedido.hora_turno && ` ${pedido.hora_turno}`}
                             </span>
                           </div>
-                          {/* 🆕 Estado de Pago del Turno */}
-                          {pedido.turno_id && (
-                            <Badge 
-                              variant="outline" 
-                              className={`text-xs ${ESTADO_PAGO_TURNO_COLORS[pedido.turno_estado_pago] || ESTADO_PAGO_TURNO_COLORS.pendiente}`}
-                            >
-                              {ESTADO_PAGO_TURNO_LABELS[pedido.turno_estado_pago] || ESTADO_PAGO_TURNO_LABELS.pendiente}
-                            </Badge>
-                          )}
+                          {/* Estado de Pago */}
+                          <Badge 
+                            variant="outline" 
+                            className="text-xs bg-green-50 text-green-700 border-green-200"
+                          >
+                            Pagado
+                          </Badge>
                         </div>
                       ) : (
                         <span className="text-slate-500">Sin turno</span>

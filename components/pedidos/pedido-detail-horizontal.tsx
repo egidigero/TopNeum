@@ -24,22 +24,16 @@ interface PedidoDetailPanelProps {
     notas: string | null
     // Datos del pedido
     productos: any
-    producto_descripcion?: string | null
-    cantidad_total: number
     forma_pago: string
-    subtotal: number
-    descuento_porcentaje: number
     total: number
     estado_pago: string
     fecha_pedido: string
-    fecha_pago: string | null
     // Turno/Envío
     turno_id: string | null
     tipo_entrega: string | null
     fecha_turno: string | null
     hora_turno: string | null
     estado_turno: string | null
-    turno_estado_pago: string
     observaciones: string | null
     datos_envio: any
   }
@@ -190,7 +184,9 @@ export function PedidoDetailPanel({ pedido, onClose, onUpdate }: PedidoDetailPan
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-600 text-sm">Cantidad:</span>
-                    <span className="text-slate-900 font-semibold">{pedido.cantidad_total} neumáticos</span>
+                    <span className="text-slate-900 font-semibold">
+                      {pedido.productos?.reduce((sum: number, p: any) => sum + (p.cantidad || 0), 0) || 0} neumáticos
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-600 text-sm">Forma de pago:</span>
@@ -310,10 +306,12 @@ export function PedidoDetailPanel({ pedido, onClose, onUpdate }: PedidoDetailPan
                       </div>
                     ))}
                   </div>
-                ) : pedido.producto_descripcion ? (
+                ) : pedido.productos?.[0]?.producto_descripcion ? (
                   <div className="bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200 rounded-xl p-4 text-center">
-                    <div className="font-bold text-slate-900 text-lg mb-2">{pedido.producto_descripcion}</div>
-                    <div className="text-slate-800 text-base mb-1">Cantidad: <span className="font-bold">{pedido.cantidad_total}</span> unidad(es)</div>
+                    <div className="font-bold text-slate-900 text-lg mb-2">{pedido.productos[0].producto_descripcion}</div>
+                    <div className="text-slate-800 text-base mb-1">
+                      Cantidad: <span className="font-bold">{pedido.productos.reduce((sum: number, p: any) => sum + (p.cantidad || 0), 0)}</span> unidad(es)
+                    </div>
                     <div className="text-emerald-700 text-lg font-bold">Total: {formatPrice(pedido.total)}</div>
                   </div>
                 ) : (
