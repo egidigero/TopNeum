@@ -61,7 +61,7 @@ export async function GET(request: NextRequest) {
       SELECT 
         id,
         forma_pago,
-        estado,
+        estado_pago,
         created_at
       FROM lead_pedidos
       WHERE lead_id = ${lead.id}
@@ -97,7 +97,7 @@ export async function GET(request: NextRequest) {
       pedidoInfo = {
         id: pedido.id,
         forma_pago: pedido.forma_pago,
-        estado: pedido.estado,
+        estado_pago: pedido.estado_pago,
         cantidad_total: cantidadTotal,
         precio_total: precioTotal,
         items: itemsResult.map((item: any) => ({
