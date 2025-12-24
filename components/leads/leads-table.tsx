@@ -95,11 +95,9 @@ export function LeadsTable({ leads, users = [], currentUser }: LeadsTableProps) 
   }
 
   return (
-    <div className="flex gap-4">
-      {/* Tabla - ocupa el espacio restante */}
-      <div className={`bg-white border rounded-lg overflow-hidden transition-all duration-300 ${
-        selectedLead ? 'flex-1' : 'w-full'
-      }`}>
+    <div className="flex flex-col gap-4">
+      {/* Tabla */}
+      <div className="bg-white border rounded-lg overflow-hidden">
       <Table>
         <TableHeader>
           <TableRow className="bg-slate-50">
@@ -270,9 +268,9 @@ export function LeadsTable({ leads, users = [], currentUser }: LeadsTableProps) 
       </Table>
       </div>
 
-      {/* Panel de detalle - ocupa el espacio derecho */}
+      {/* Panel de detalle - se abre debajo de la tabla */}
       {selectedLead && currentUser && (
-        <div className="flex-shrink-0 w-[500px]">
+        <div className="w-full">
           <LeadDetailPanel
             lead={selectedLead}
             users={users}

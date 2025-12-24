@@ -5,8 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
-import { Input } from "@/components/ui/input"
-import { X, Phone, MessageSquare, ShoppingCart, Trash2, Edit, Save } from "lucide-react"
+import { X, Phone, MessageSquare, ShoppingCart, Trash2, Save } from "lucide-react"
 import type { User as AuthUser } from "@/lib/auth"
 import { cn } from "@/lib/utils"
 import {
@@ -36,7 +35,6 @@ interface LeadDetailPanelProps {
     notas?: string | null
     created_at: string
     codigo_confirmacion?: string | null
-    // Datos recolectados
     medida_neumatico?: string | null
     marca_preferida?: string | null
     tipo_vehiculo?: string | null
@@ -44,12 +42,10 @@ interface LeadDetailPanelProps {
     forma_pago?: string | null
     ultimo_total?: number | null
     region?: string
-    // Producto elegido
     producto_descripcion?: string | null
     forma_pago_detalle?: string | null
     cantidad?: number | null
     precio_final?: number | null
-    // Información de turno
     tiene_turno?: number | boolean
     turno_fecha?: string | null
     turno_hora?: string | null
@@ -63,7 +59,6 @@ interface LeadDetailPanelProps {
 }
 
 export function LeadDetailPanel({ lead, users, currentUser, onClose, onUpdate, onDelete }: LeadDetailPanelProps) {
-  // Compatibilidad con campos antiguos y nuevos
   const nombre = lead.nombre_cliente || lead.nombre || "Sin nombre"
   const telefono = lead.telefono_whatsapp || lead.telefono || "Sin teléfono"
   
@@ -135,29 +130,33 @@ export function LeadDetailPanel({ lead, users, currentUser, onClose, onUpdate, o
   }
 
   return (
-    <Card className="bg-white border-2 border-blue-100 shadow-xl sticky top-8 h-fit">
-        <CardHeader className="border-b-2 border-blue-100 bg-gradient-to-r from-blue-50 to-cyan-50">
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <CardTitle className="text-slate-900 text-xl font-bold">{nombre}</CardTitle>
-              <div className="flex items-center gap-3 text-sm text-slate-600 mt-1">
-                <Phone className="w-4 h-4 text-blue-600" />
-                <span className="font-mono text-base">{telefono}</span>
-              </div>
+    <Card className="bg-white border-2 border-blue-100 shadow-xl">
+      <CardHeader className="border-b-2 border-blue-100 bg-gradient-to-r from-blue-50 to-cyan-50">
+        <div className="flex items-start justify-between">
+          <div className="flex-1">
+            <CardTitle className="text-slate-900 text-xl font-bold">{nombre}</CardTitle>
+            <div className="flex items-center gap-3 text-sm text-slate-600 mt-1">
+              <Phone className="w-4 h-4 text-blue-600" />
+              <span className="font-mono text-base">{telefono}</span>
             </div>
-            <Button variant="ghost" size="sm" onClick={onClose} className="text-slate-600 hover:text-slate-900 hover:bg-blue-100">
-              <X className="w-5 h-5" />
-            </Button>
           </div>
-        </CardHeader>
+          <Button variant="ghost" size="sm" onClick={onClose} className="text-slate-600 hover:text-slate-900 hover:bg-blue-100">
+            <X className="w-5 h-5" />
+          </Button>
+        </div>
+      </CardHeader>
 
-        <CardContent className="p-6 space-y-4 max-h-[calc(100vh-12rem)] overflow-y-auto bg-blue-50/30">
-          {/* Quick Actions & Info */}
-          <div className="grid grid-cols-2 gap-4">
-            <Button onClick={openWhatsApp} className="bg-green-600 hover:bg-green-700 h-12">
+      <CardContent className="p-6 bg-blue-50/30">
+        {/* Layout en 3 columnas */}
+        <div className="grid grid-cols-3 gap-6">
+          
+          {/* Columna 1: Info básica */}
+          <div className="space-y-4">
+            <Button onClick={openWhatsApp} className="w-full bg-green-600 hover:bg-green-700 h-12">
               <Phone className="w-4 h-4 mr-2" />
               Abrir WhatsApp
             </Button>
+
             <div className="flex items-center gap-2 flex-wrap">
               <Badge variant="secondary" className="bg-blue-100 text-blue-700 border border-blue-200">
                 WhatsApp
@@ -173,10 +172,6 @@ export function LeadDetailPanel({ lead, users, currentUser, onClose, onUpdate, o
                 </Badge>
               )}
             </div>
-          </div>
-
-          {/* Mensaje Inicial */}
-          <div>
 
             {lead.mensaje_inicial && (
               <div className="bg-white border-2 border-blue-100 rounded-lg p-3">
@@ -187,353 +182,222 @@ export function LeadDetailPanel({ lead, users, currentUser, onClose, onUpdate, o
                 <p className="text-sm text-slate-700">{lead.mensaje_inicial}</p>
               </div>
             )}
-          </div>
 
-          {/* Información Recolectada (consulta de producto) */}
-          <div className="space-y-2">
-            <label className="text-sm font-bold text-slate-700">Información Recolectada</label>
-            <div className="bg-white border-2 border-slate-200 rounded-lg p-4">
-              <div className="grid grid-cols-2 gap-x-6 gap-y-3">
-              {lead.tipo_vehiculo && (
-                <div className="flex flex-col text-sm">
-                  <span className="text-slate-500 text-xs mb-0.5">Vehículo</span>
-                  <span className="text-slate-900 font-medium">{lead.tipo_vehiculo}</span>
-                </div>
-              )}
-              {lead.medida_neumatico && (
-                <div className="flex flex-col text-sm">
-                  <span className="text-slate-500 text-xs mb-0.5">Medida</span>
-                  <span className="text-slate-900 font-medium">{lead.medida_neumatico}</span>
-                </div>
-              )}
-              {lead.marca_preferida && (
-                <div className="flex flex-col text-sm">
-                  <span className="text-slate-500 text-xs mb-0.5">Marca Preferida</span>
-                  <span className="text-slate-900 font-medium">{lead.marca_preferida}</span>
-                </div>
-              )}
-              {lead.tipo_uso && (
-                <div className="flex flex-col text-sm">
-                  <span className="text-slate-500 text-xs mb-0.5">Uso</span>
-                  <span className="text-slate-900 font-medium">{lead.tipo_uso}</span>
-                </div>
-              )}
-              {lead.forma_pago && (
-                <div className="flex flex-col text-sm">
-                  <span className="text-slate-500 text-xs mb-0.5">Forma de Pago</span>
-                  <span className="text-slate-900 font-medium">{lead.forma_pago}</span>
-                </div>
-              )}
-              {lead.ultimo_total && (
-                <div className="flex flex-col text-sm">
-                  <span className="text-slate-500 text-xs mb-0.5">Último Total</span>
-                  <span className="text-slate-900 font-medium">{formatPrice(lead.ultimo_total)}</span>
-                </div>
-              )}
-              {!lead.tipo_vehiculo && !lead.medida_neumatico && !lead.marca_preferida && !lead.forma_pago && (
-                <div className="col-span-2">
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-slate-700">Información Recolectada</label>
+              <div className="bg-white border-2 border-slate-200 rounded-lg p-4 space-y-3">
+                {lead.tipo_vehiculo && (
+                  <div className="flex flex-col text-sm">
+                    <span className="text-slate-500 text-xs mb-0.5">Vehículo</span>
+                    <span className="text-slate-900 font-medium">{lead.tipo_vehiculo}</span>
+                  </div>
+                )}
+                {lead.medida_neumatico && (
+                  <div className="flex flex-col text-sm">
+                    <span className="text-slate-500 text-xs mb-0.5">Medida</span>
+                    <span className="text-slate-900 font-medium">{lead.medida_neumatico}</span>
+                  </div>
+                )}
+                {lead.marca_preferida && (
+                  <div className="flex flex-col text-sm">
+                    <span className="text-slate-500 text-xs mb-0.5">Marca Preferida</span>
+                    <span className="text-slate-900 font-medium">{lead.marca_preferida}</span>
+                  </div>
+                )}
+                {lead.forma_pago && (
+                  <div className="flex flex-col text-sm">
+                    <span className="text-slate-500 text-xs mb-0.5">Forma de Pago</span>
+                    <span className="text-slate-900 font-medium">{lead.forma_pago}</span>
+                  </div>
+                )}
+                {lead.ultimo_total && (
+                  <div className="flex flex-col text-sm">
+                    <span className="text-slate-500 text-xs mb-0.5">Último Total</span>
+                    <span className="text-slate-900 font-medium">{formatPrice(lead.ultimo_total)}</span>
+                  </div>
+                )}
+                {!lead.tipo_vehiculo && !lead.medida_neumatico && !lead.marca_preferida && !lead.forma_pago && (
                   <p className="text-sm text-slate-400 italic">No hay información recolectada aún</p>
-                </div>
-              )}
+                )}
               </div>
             </div>
           </div>
 
-          {/* 🆕 Detalle de Compra - Solo si hay producto elegido */}
-          {(lead.producto_descripcion || lead.precio_final) && (
-            <div className="space-y-2">
-              <label className="text-sm font-bold text-emerald-700 flex items-center gap-2">
-                <ShoppingCart className="w-5 h-5" />
-                Detalle de Compra
-              </label>
-              <div className="bg-gradient-to-br from-emerald-50 to-green-50 border-2 border-emerald-200 rounded-lg p-4">
-                <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+          {/* Columna 2: Detalle de Compra y Estados */}
+          <div className="space-y-4">
+            {(lead.producto_descripcion || lead.precio_final) && (
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-emerald-700 flex items-center gap-2">
+                  <ShoppingCart className="w-5 h-5" />
+                  Detalle de Compra
+                </label>
+                <div className="bg-gradient-to-br from-emerald-50 to-green-50 border-2 border-emerald-200 rounded-lg p-4 space-y-3">
                   {lead.producto_descripcion && (
-                    <div className="col-span-2">
+                    <div>
                       <div className="text-xs text-emerald-700 font-semibold mb-1">Producto elegido</div>
                       <div className="text-sm text-emerald-900 font-semibold">{lead.producto_descripcion}</div>
                     </div>
                   )}
-                  
                   {lead.cantidad && (
                     <div className="flex flex-col text-sm">
                       <span className="text-emerald-600 text-xs mb-0.5">Cantidad</span>
                       <span className="text-emerald-900 font-medium">{lead.cantidad} unidades</span>
                     </div>
                   )}
-
                   {lead.forma_pago_detalle && (
                     <div className="flex flex-col text-sm">
                       <span className="text-emerald-600 text-xs mb-0.5">Forma de pago</span>
                       <span className="text-emerald-900 font-medium">{lead.forma_pago_detalle}</span>
                     </div>
                   )}
-
                   {lead.precio_final && (
-                    <div className="col-span-2 flex justify-between text-sm pt-3 border-t-2 border-emerald-300">
+                    <div className="flex justify-between text-sm pt-3 border-t-2 border-emerald-300">
                       <span className="text-emerald-700 font-semibold text-base">TOTAL</span>
                       <span className="text-emerald-900 font-bold text-xl">{formatPrice(lead.precio_final)}</span>
                     </div>
                   )}
                 </div>
-
-                {/* 🆕 Botón Confirmar Pago - Solo si está en "pago_informado" */}
-                {lead.estado === 'pago_informado' && (
-                  <Button
-                    onClick={() => handleChangeEstado('pedido_confirmado')}
-                    className="w-full bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white font-bold mt-2 shadow-lg"
-                  >
-                    ✅ Confirmar Pago
-                  </Button>
-                )}
-
-                {/* Badge del estado del pedido */}
-                {lead.estado === 'esperando_pago' && (
-                  <Badge variant="outline" className="border-2 border-amber-400 text-amber-700 bg-amber-50 w-full justify-center font-semibold">
-                    ⏳ Esperando pago del cliente
-                  </Badge>
-                )}
-                {lead.estado === 'pago_informado' && (
-                  <Badge variant="outline" className="border-2 border-blue-400 text-blue-700 bg-blue-50 w-full justify-center font-semibold">
-                    💬 Cliente informó pago - Confirmar
-                  </Badge>
-                )}
-                {lead.estado === 'pedido_confirmado' && (
-                  <Badge variant="outline" className="border-2 border-emerald-500 text-emerald-700 bg-emerald-50 w-full justify-center font-semibold">
-                    ✅ Pago confirmado
-                  </Badge>
-                )}
-
-                {/* 🆕 Estado del Turno - Siempre visible */}
-                <div className="mt-3 pt-3 border-t-2 border-emerald-300">
-                  <div className="text-xs text-emerald-700 font-bold mb-2">Estado del turno:</div>
-                  {lead.tiene_turno && lead.turno_fecha ? (
-                    <div className="bg-gradient-to-br from-blue-50 to-cyan-50 border-2 border-blue-200 rounded-lg p-2 space-y-1">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-blue-900 font-medium">
-                          📅 {new Date(lead.turno_fecha).toLocaleDateString('es-AR', { 
-                            day: '2-digit', 
-                            month: '2-digit', 
-                            year: 'numeric' 
-                          })}
-                        </span>
-                        {lead.turno_hora && (
-                          <span className="text-sm text-blue-900 font-medium">
-                            🕐 {lead.turno_hora}
-                          </span>
-                        )}
-                      </div>
-                      <Badge 
-                        variant="outline" 
-                        className={cn(
-                          "w-full justify-center font-semibold",
-                          lead.turno_estado === 'pendiente' && "border-2 border-amber-400 text-amber-700 bg-amber-50",
-                          lead.turno_estado === 'confirmado' && "border-2 border-green-500 text-green-700 bg-green-50",
-                          lead.turno_estado === 'completado' && "border-2 border-emerald-500 text-emerald-700 bg-emerald-50"
-                        )}
-                      >
-                        {lead.turno_estado === 'pendiente' && '⏳ Turno Pendiente'}
-                        {lead.turno_estado === 'confirmado' && '✅ Turno Confirmado'}
-                        {lead.turno_estado === 'completado' && '✔️ Turno Completado'}
-                      </Badge>
-                    </div>
-                  ) : (
-                    <Badge variant="outline" className="border-2 border-amber-300 text-amber-700 bg-amber-50 w-full justify-center font-semibold">
-                      ⏳ Turno Pendiente de Agendar
-                    </Badge>
-                  )}
-                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Estado */}
-          <div className="space-y-2">
-            <label className="text-sm font-bold text-slate-700">Cambiar estado</label>
-            <div className="grid grid-cols-3 gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => handleChangeEstado("en_conversacion")}
-                className="border-2 border-blue-300 text-blue-700 bg-blue-50 hover:bg-blue-100 text-xs font-medium py-2"
-              >
-                En Conversación
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => handleChangeEstado("cotizado")}
-                className="border-2 border-purple-300 text-purple-700 bg-purple-50 hover:bg-purple-100 text-xs font-medium py-2"
-              >
-                Cotizado
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => handleChangeEstado("esperando_pago")}
-                className="border-2 border-amber-300 text-amber-700 bg-amber-50 hover:bg-amber-100 text-xs font-medium py-2"
-              >
-                Esperando Pago
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => handleChangeEstado("pago_informado")}
-                className="border-2 border-cyan-300 text-cyan-700 bg-cyan-50 hover:bg-cyan-100 text-xs font-medium py-2"
-              >
-                Pago Informado
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => handleChangeEstado("pedido_confirmado")}
-                className="border-2 border-emerald-400 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 text-xs font-medium py-2"
-              >
-                Confirmado
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => handleChangeEstado("perdido")}
-                className="border-2 border-red-300 text-red-700 bg-red-50 hover:bg-red-100 text-xs font-medium py-2"
-              >
-                Perdido
-              </Button>
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-slate-700">Cambiar estado</label>
+              <div className="grid grid-cols-2 gap-2">
+                <Button size="sm" variant="outline" onClick={() => handleChangeEstado("en_conversacion")}
+                  className="border-2 border-blue-300 text-blue-700 bg-blue-50 hover:bg-blue-100 text-xs font-medium py-2">
+                  En Conversación
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => handleChangeEstado("cotizado")}
+                  className="border-2 border-purple-300 text-purple-700 bg-purple-50 hover:bg-purple-100 text-xs font-medium py-2">
+                  Cotizado
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => handleChangeEstado("esperando_pago")}
+                  className="border-2 border-amber-300 text-amber-700 bg-amber-50 hover:bg-amber-100 text-xs font-medium py-2">
+                  Esperando Pago
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => handleChangeEstado("pago_informado")}
+                  className="border-2 border-cyan-300 text-cyan-700 bg-cyan-50 hover:bg-cyan-100 text-xs font-medium py-2">
+                  Pago Informado
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => handleChangeEstado("pedido_confirmado")}
+                  className="border-2 border-emerald-400 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 text-xs font-medium py-2">
+                  Confirmado
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => handleChangeEstado("perdido")}
+                  className="border-2 border-red-300 text-red-700 bg-red-50 hover:bg-red-100 text-xs font-medium py-2">
+                  Perdido
+                </Button>
+              </div>
             </div>
           </div>
 
-          {/* Pagos */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <label className="text-sm font-bold text-slate-700">Pagos</label>
-              <Badge variant="secondary" className="bg-blue-100 text-blue-700 border border-blue-200">
-                {pagos.length}
-              </Badge>
-            </div>
+          {/* Columna 3: Pagos y Notas */}
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-bold text-slate-700">Pagos</label>
+                <Badge variant="secondary" className="bg-blue-100 text-blue-700 border border-blue-200">
+                  {pagos.length}
+                </Badge>
+              </div>
 
-            {loadingPagos ? (
-              <p className="text-sm text-slate-500">Cargando...</p>
-            ) : pagos.length === 0 ? (
-              <p className="text-sm text-slate-400 italic">Sin pagos registrados</p>
-            ) : (
-              <div className="space-y-2 max-h-60 overflow-y-auto">
-                {pagos.map((pago) => (
-                  <div key={pago.id} className="bg-white border-2 border-slate-200 rounded-lg p-3">
-                    <div className="grid grid-cols-2 gap-x-4 gap-y-2">
-                      {/* Producto */}
+              {loadingPagos ? (
+                <p className="text-sm text-slate-500">Cargando...</p>
+              ) : pagos.length === 0 ? (
+                <p className="text-sm text-slate-400 italic">Sin pagos registrados</p>
+              ) : (
+                <div className="space-y-2 max-h-60 overflow-y-auto">
+                  {pagos.map((pago) => (
+                    <div key={pago.id} className="bg-white border-2 border-slate-200 rounded-lg p-3 space-y-2">
                       {pago.producto_descripcion && (
-                        <div className="col-span-2">
+                        <div>
                           <span className="text-xs text-slate-500">Producto</span>
                           <p className="text-sm font-semibold text-slate-900">{pago.producto_descripcion}</p>
                         </div>
                       )}
-                      
-                      {/* Cantidad */}
                       {pago.cantidad_total && (
                         <div className="flex flex-col">
                           <span className="text-xs text-slate-500">Cantidad</span>
                           <span className="text-sm font-medium text-slate-700">{pago.cantidad_total} unidades</span>
                         </div>
                       )}
-
-                      {/* Precio */}
                       <div className="flex flex-col">
                         <span className="text-xs text-slate-500">Total</span>
                         <span className="text-sm font-bold text-emerald-700">
                           {formatPrice(pago.precio_final || pago.total)}
                         </span>
                       </div>
-                      
-                      {/* Forma de Pago */}
                       {pago.forma_pago_detalle && (
-                        <div className="col-span-2">
+                        <div>
                           <span className="text-xs text-slate-500">Forma de pago</span>
                           <div className="text-sm text-slate-700">💳 {pago.forma_pago_detalle}</div>
                         </div>
                       )}
+                      <div className="flex items-center justify-between mt-2 pt-2 border-t">
+                        <Badge variant={pago.estado_pago === 'confirmado' ? 'default' : 'secondary'} className="text-xs">
+                          {pago.estado_pago}
+                        </Badge>
+                        <span className="text-xs text-slate-500">
+                          {new Date(pago.fecha_pedido).toLocaleDateString('es-AR')}
+                        </span>
+                      </div>
                     </div>
-                    
-                    {/* Estado y Fecha */}
-                    <div className="flex items-center justify-between pt-2 border-t border-slate-200">
-                      <span className="text-xs text-slate-500">
-                        {new Date(pago.created_at).toLocaleDateString('es-AR')}
-                      </span>
-                      <Badge
-                        className={
-                          pago.estado_pago === "confirmado"
-                            ? "bg-green-100 text-green-700 border-2 border-green-300"
-                            : pago.estado_pago === "rechazado"
-                              ? "bg-red-100 text-red-700 border-2 border-red-300"
-                              : "bg-yellow-100 text-yellow-700 border-2 border-yellow-300"
-                        }
-                      >
-                        {pago.estado_pago || 'pendiente'}
-                      </Badge>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+                  ))}
+                </div>
+              )}
+            </div>
 
-          {/* Notas */}
-          <div className="space-y-2">
-            <label className="text-sm font-bold text-slate-700">Notas</label>
-            <Textarea
-              value={notas}
-              onChange={(e) => setNotas(e.target.value)}
-              placeholder="Agregar notas sobre el lead..."
-              className="bg-white border-2 border-slate-300 text-slate-900 focus:border-blue-500 min-h-[100px]"
-            />
-            <Button onClick={handleSaveNotas} size="sm" className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-bold shadow-lg">
-              Guardar Notas
-            </Button>
-          </div>
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-slate-700">Notas</label>
+              <Textarea
+                value={notas}
+                onChange={(e) => setNotas(e.target.value)}
+                placeholder="Agregar notas sobre el lead..."
+                className="bg-white border-2 border-slate-300 text-slate-900 focus:border-blue-500 min-h-[100px]"
+              />
+              <Button onClick={handleSaveNotas} size="sm" className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-bold shadow-lg">
+                <Save className="w-4 h-4 mr-2" />
+                Guardar Notas
+              </Button>
+            </div>
 
-          {/* Crear Pedido */}
-          {lead.estado === "pago_verificado" && (
-            <Button className="w-full bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white font-bold shadow-lg">
-              <ShoppingCart className="w-4 h-4 mr-2" />
-              Crear Pedido
-            </Button>
-          )}
-
-          {/* Eliminar Lead */}
-          {onDelete && (
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button 
-                  variant="outline" 
-                  className="w-full border-2 border-red-400 text-red-700 bg-red-50 hover:bg-red-100 hover:text-red-800 font-medium"
-                  disabled={deleting}
-                >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Eliminar Lead
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent className="bg-white border-2 border-red-200">
-                <AlertDialogHeader>
-                  <AlertDialogTitle className="text-red-700 font-bold">¿Eliminar lead?</AlertDialogTitle>
-                  <AlertDialogDescription className="text-slate-700">
-                    Esta acción no se puede deshacer. Se eliminará el lead <strong className="text-red-700">{nombre}</strong> y todos sus datos asociados (consultas, pedidos, pagos).
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel className="bg-slate-100 border-2 border-slate-300 text-slate-700 hover:bg-slate-200">
-                    Cancelar
-                  </AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={handleDelete}
-                    className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-bold shadow-lg"
+            {onDelete && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    className="w-full border-2 border-red-400 text-red-700 bg-red-50 hover:bg-red-100 hover:text-red-800 font-medium"
                     disabled={deleting}
                   >
-                    {deleting ? "Eliminando..." : "Eliminar"}
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          )}
-        </CardContent>
-      </Card>
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Eliminar Lead
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent className="bg-white border-2 border-red-200">
+                  <AlertDialogHeader>
+                    <AlertDialogTitle className="text-red-700 font-bold">¿Eliminar lead?</AlertDialogTitle>
+                    <AlertDialogDescription className="text-slate-700">
+                      Esta acción no se puede deshacer. Se eliminará el lead <strong className="text-red-700">{nombre}</strong> y todos sus datos asociados.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel className="bg-slate-100 border-2 border-slate-300 text-slate-700 hover:bg-slate-200">
+                      Cancelar
+                    </AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={handleDelete}
+                      className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-bold shadow-lg"
+                      disabled={deleting}
+                    >
+                      {deleting ? "Eliminando..." : "Eliminar"}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   )
 }
