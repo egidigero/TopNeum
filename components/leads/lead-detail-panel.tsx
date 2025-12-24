@@ -135,8 +135,7 @@ export function LeadDetailPanel({ lead, users, currentUser, onClose, onUpdate, o
   }
 
   return (
-    <div className="w-[600px] flex-shrink-0">
-      <Card className="bg-white border-2 border-blue-100 shadow-xl sticky top-8">
+    <Card className="bg-white border-2 border-blue-100 shadow-xl sticky top-8 h-fit">
         <CardHeader className="border-b-2 border-blue-100 bg-gradient-to-r from-blue-50 to-cyan-50">
           <div className="flex items-start justify-between">
             <div className="flex-1">
@@ -536,6 +535,5 @@ export function LeadDetailPanel({ lead, users, currentUser, onClose, onUpdate, o
           )}
         </CardContent>
       </Card>
-    </div>
   )
 }
