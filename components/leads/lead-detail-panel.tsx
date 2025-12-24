@@ -135,35 +135,31 @@ export function LeadDetailPanel({ lead, users, currentUser, onClose, onUpdate, o
   }
 
   return (
-    <div className="w-96 flex-shrink-0">
+    <div className="w-[600px] flex-shrink-0">
       <Card className="bg-white border-2 border-blue-100 shadow-xl sticky top-8">
         <CardHeader className="border-b-2 border-blue-100 bg-gradient-to-r from-blue-50 to-cyan-50">
           <div className="flex items-start justify-between">
             <div className="flex-1">
-              <CardTitle className="text-slate-900 text-lg font-bold">{nombre}</CardTitle>
-              <div className="flex items-center gap-2 text-sm text-slate-600 mt-1">
-                <Phone className="w-3 h-3 text-blue-600" />
-                <span className="font-mono">{telefono}</span>
+              <CardTitle className="text-slate-900 text-xl font-bold">{nombre}</CardTitle>
+              <div className="flex items-center gap-3 text-sm text-slate-600 mt-1">
+                <Phone className="w-4 h-4 text-blue-600" />
+                <span className="font-mono text-base">{telefono}</span>
               </div>
             </div>
             <Button variant="ghost" size="sm" onClick={onClose} className="text-slate-600 hover:text-slate-900 hover:bg-blue-100">
-              <X className="w-4 h-4" />
+              <X className="w-5 h-5" />
             </Button>
           </div>
         </CardHeader>
 
-        <CardContent className="p-4 space-y-4 max-h-[calc(100vh-12rem)] overflow-y-auto bg-blue-50/30">
-          {/* Quick Actions */}
-          <div className="space-y-2">
-            <Button onClick={openWhatsApp} className="w-full bg-green-600 hover:bg-green-700">
+        <CardContent className="p-6 space-y-4 max-h-[calc(100vh-12rem)] overflow-y-auto bg-blue-50/30">
+          {/* Quick Actions & Info */}
+          <div className="grid grid-cols-2 gap-4">
+            <Button onClick={openWhatsApp} className="bg-green-600 hover:bg-green-700 h-12">
               <Phone className="w-4 h-4 mr-2" />
               Abrir WhatsApp
             </Button>
-          </div>
-
-          {/* Info */}
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 text-sm flex-wrap">
+            <div className="flex items-center gap-2 flex-wrap">
               <Badge variant="secondary" className="bg-blue-100 text-blue-700 border border-blue-200">
                 WhatsApp
               </Badge>
@@ -173,16 +169,20 @@ export function LeadDetailPanel({ lead, users, currentUser, onClose, onUpdate, o
                 </Badge>
               )}
               {lead.codigo_confirmacion && (
-                <Badge variant="outline" className="border-amber-400 bg-amber-50 text-amber-700 font-mono">
-                  Código: {lead.codigo_confirmacion}
+                <Badge variant="outline" className="border-amber-400 bg-amber-50 text-amber-700 font-mono text-xs">
+                  {lead.codigo_confirmacion}
                 </Badge>
               )}
             </div>
+          </div>
+
+          {/* Mensaje Inicial */}
+          <div>
 
             {lead.mensaje_inicial && (
               <div className="bg-white border-2 border-blue-100 rounded-lg p-3">
                 <div className="flex items-center gap-2 text-xs text-blue-600 mb-2">
-                  <MessageSquare className="w-3 h-3" />
+                  <MessageSquare className="w-4 h-4" />
                   <span className="font-semibold">Mensaje inicial</span>
                 </div>
                 <p className="text-sm text-slate-700">{lead.mensaje_inicial}</p>
@@ -193,52 +193,50 @@ export function LeadDetailPanel({ lead, users, currentUser, onClose, onUpdate, o
           {/* Información Recolectada (consulta de producto) */}
           <div className="space-y-2">
             <label className="text-sm font-bold text-slate-700">Información Recolectada</label>
-            <div className="bg-white border-2 border-slate-200 rounded-lg p-3 space-y-2">
+            <div className="bg-white border-2 border-slate-200 rounded-lg p-4">
+              <div className="grid grid-cols-2 gap-x-6 gap-y-3">
               {lead.tipo_vehiculo && (
-                <div className="flex justify-between text-sm">
-                  <span className="text-slate-600">Vehículo:</span>
+                <div className="flex flex-col text-sm">
+                  <span className="text-slate-500 text-xs mb-0.5">Vehículo</span>
                   <span className="text-slate-900 font-medium">{lead.tipo_vehiculo}</span>
                 </div>
               )}
               {lead.medida_neumatico && (
-                <div className="flex justify-between text-sm">
-                  <span className="text-slate-600">Medida:</span>
+                <div className="flex flex-col text-sm">
+                  <span className="text-slate-500 text-xs mb-0.5">Medida</span>
                   <span className="text-slate-900 font-medium">{lead.medida_neumatico}</span>
                 </div>
               )}
               {lead.marca_preferida && (
-                <div className="flex justify-between text-sm">
-                  <span className="text-slate-600">Marca Preferida:</span>
+                <div className="flex flex-col text-sm">
+                  <span className="text-slate-500 text-xs mb-0.5">Marca Preferida</span>
                   <span className="text-slate-900 font-medium">{lead.marca_preferida}</span>
                 </div>
               )}
               {lead.tipo_uso && (
-                <div className="flex justify-between text-sm">
-                  <span className="text-slate-600">Uso:</span>
+                <div className="flex flex-col text-sm">
+                  <span className="text-slate-500 text-xs mb-0.5">Uso</span>
                   <span className="text-slate-900 font-medium">{lead.tipo_uso}</span>
                 </div>
               )}
               {lead.forma_pago && (
-                <div className="flex justify-between text-sm">
-                  <span className="text-slate-600">Forma de Pago:</span>
+                <div className="flex flex-col text-sm">
+                  <span className="text-slate-500 text-xs mb-0.5">Forma de Pago</span>
                   <span className="text-slate-900 font-medium">{lead.forma_pago}</span>
                 </div>
               )}
               {lead.ultimo_total && (
-                <div className="flex justify-between text-sm">
-                  <span className="text-slate-600">Último Total:</span>
+                <div className="flex flex-col text-sm">
+                  <span className="text-slate-500 text-xs mb-0.5">Último Total</span>
                   <span className="text-slate-900 font-medium">{formatPrice(lead.ultimo_total)}</span>
                 </div>
               )}
-              {lead.region && (
-                <div className="flex justify-between text-sm">
-                  <span className="text-slate-600">Región:</span>
-                  <span className="text-slate-900 font-medium">{lead.region}</span>
+              {!lead.tipo_vehiculo && !lead.medida_neumatico && !lead.marca_preferida && !lead.forma_pago && (
+                <div className="col-span-2">
+                  <p className="text-sm text-slate-400 italic">No hay información recolectada aún</p>
                 </div>
               )}
-              {!lead.tipo_vehiculo && !lead.medida_neumatico && !lead.marca_preferida && !lead.forma_pago && (
-                <p className="text-sm text-slate-400 italic">No hay información recolectada aún</p>
-              )}
+              </div>
             </div>
           </div>
 
@@ -246,37 +244,39 @@ export function LeadDetailPanel({ lead, users, currentUser, onClose, onUpdate, o
           {(lead.producto_descripcion || lead.precio_final) && (
             <div className="space-y-2">
               <label className="text-sm font-bold text-emerald-700 flex items-center gap-2">
-                <ShoppingCart className="w-4 h-4" />
+                <ShoppingCart className="w-5 h-5" />
                 Detalle de Compra
               </label>
-              <div className="bg-gradient-to-br from-emerald-50 to-green-50 border-2 border-emerald-200 rounded-lg p-3 space-y-3">
-                {lead.producto_descripcion && (
-                  <div>
-                    <div className="text-xs text-emerald-700 font-semibold mb-1">Producto elegido:</div>
-                    <div className="text-sm text-emerald-900 font-semibold">{lead.producto_descripcion}</div>
-                  </div>
-                )}
-                
-                {lead.cantidad && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-emerald-700">Cantidad:</span>
-                    <span className="text-emerald-900 font-medium">{lead.cantidad} unidades</span>
-                  </div>
-                )}
+              <div className="bg-gradient-to-br from-emerald-50 to-green-50 border-2 border-emerald-200 rounded-lg p-4">
+                <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+                  {lead.producto_descripcion && (
+                    <div className="col-span-2">
+                      <div className="text-xs text-emerald-700 font-semibold mb-1">Producto elegido</div>
+                      <div className="text-sm text-emerald-900 font-semibold">{lead.producto_descripcion}</div>
+                    </div>
+                  )}
+                  
+                  {lead.cantidad && (
+                    <div className="flex flex-col text-sm">
+                      <span className="text-emerald-600 text-xs mb-0.5">Cantidad</span>
+                      <span className="text-emerald-900 font-medium">{lead.cantidad} unidades</span>
+                    </div>
+                  )}
 
-                {lead.precio_final && (
-                  <div className="flex justify-between text-sm pt-2 border-t-2 border-emerald-300">
-                    <span className="text-emerald-700 font-semibold">TOTAL:</span>
-                    <span className="text-emerald-900 font-bold text-lg">{formatPrice(lead.precio_final)}</span>
-                  </div>
-                )}
+                  {lead.forma_pago_detalle && (
+                    <div className="flex flex-col text-sm">
+                      <span className="text-emerald-600 text-xs mb-0.5">Forma de pago</span>
+                      <span className="text-emerald-900 font-medium">{lead.forma_pago_detalle}</span>
+                    </div>
+                  )}
 
-                {lead.forma_pago_detalle && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-emerald-700">Forma de pago:</span>
-                    <span className="text-emerald-900 font-medium">{lead.forma_pago_detalle}</span>
-                  </div>
-                )}
+                  {lead.precio_final && (
+                    <div className="col-span-2 flex justify-between text-sm pt-3 border-t-2 border-emerald-300">
+                      <span className="text-emerald-700 font-semibold text-base">TOTAL</span>
+                      <span className="text-emerald-900 font-bold text-xl">{formatPrice(lead.precio_final)}</span>
+                    </div>
+                  )}
+                </div>
 
                 {/* 🆕 Botón Confirmar Pago - Solo si está en "pago_informado" */}
                 {lead.estado === 'pago_informado' && (
@@ -351,12 +351,12 @@ export function LeadDetailPanel({ lead, users, currentUser, onClose, onUpdate, o
           {/* Estado */}
           <div className="space-y-2">
             <label className="text-sm font-bold text-slate-700">Cambiar estado</label>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-3 gap-2">
               <Button
                 size="sm"
                 variant="outline"
                 onClick={() => handleChangeEstado("en_conversacion")}
-                className="border-2 border-blue-300 text-blue-700 bg-blue-50 hover:bg-blue-100 text-xs font-medium"
+                className="border-2 border-blue-300 text-blue-700 bg-blue-50 hover:bg-blue-100 text-xs font-medium py-2"
               >
                 En Conversación
               </Button>
@@ -364,7 +364,7 @@ export function LeadDetailPanel({ lead, users, currentUser, onClose, onUpdate, o
                 size="sm"
                 variant="outline"
                 onClick={() => handleChangeEstado("cotizado")}
-                className="border-2 border-purple-300 text-purple-700 bg-purple-50 hover:bg-purple-100 text-xs font-medium"
+                className="border-2 border-purple-300 text-purple-700 bg-purple-50 hover:bg-purple-100 text-xs font-medium py-2"
               >
                 Cotizado
               </Button>
@@ -372,7 +372,7 @@ export function LeadDetailPanel({ lead, users, currentUser, onClose, onUpdate, o
                 size="sm"
                 variant="outline"
                 onClick={() => handleChangeEstado("esperando_pago")}
-                className="border-2 border-amber-300 text-amber-700 bg-amber-50 hover:bg-amber-100 text-xs font-medium"
+                className="border-2 border-amber-300 text-amber-700 bg-amber-50 hover:bg-amber-100 text-xs font-medium py-2"
               >
                 Esperando Pago
               </Button>
@@ -380,7 +380,7 @@ export function LeadDetailPanel({ lead, users, currentUser, onClose, onUpdate, o
                 size="sm"
                 variant="outline"
                 onClick={() => handleChangeEstado("pago_informado")}
-                className="border-2 border-cyan-300 text-cyan-700 bg-cyan-50 hover:bg-cyan-100 text-xs font-medium"
+                className="border-2 border-cyan-300 text-cyan-700 bg-cyan-50 hover:bg-cyan-100 text-xs font-medium py-2"
               >
                 Pago Informado
               </Button>
@@ -388,15 +388,15 @@ export function LeadDetailPanel({ lead, users, currentUser, onClose, onUpdate, o
                 size="sm"
                 variant="outline"
                 onClick={() => handleChangeEstado("pedido_confirmado")}
-                className="border-2 border-emerald-400 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 text-xs font-medium"
+                className="border-2 border-emerald-400 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 text-xs font-medium py-2"
               >
-                Pedido Confirmado
+                Confirmado
               </Button>
               <Button
                 size="sm"
                 variant="outline"
                 onClick={() => handleChangeEstado("perdido")}
-                className="border-2 border-red-300 text-red-700 bg-red-50 hover:bg-red-100 text-xs font-medium"
+                className="border-2 border-red-300 text-red-700 bg-red-50 hover:bg-red-100 text-xs font-medium py-2"
               >
                 Perdido
               </Button>
@@ -417,35 +417,42 @@ export function LeadDetailPanel({ lead, users, currentUser, onClose, onUpdate, o
             ) : pagos.length === 0 ? (
               <p className="text-sm text-slate-400 italic">Sin pagos registrados</p>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-2 max-h-60 overflow-y-auto">
                 {pagos.map((pago) => (
                   <div key={pago.id} className="bg-white border-2 border-slate-200 rounded-lg p-3">
-                    {/* Producto */}
-                    {pago.producto_descripcion && (
-                      <div className="mb-2">
-                        <span className="text-xs text-slate-600">Producto:</span>
-                        <p className="text-sm font-semibold text-slate-900">{pago.producto_descripcion}</p>
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+                      {/* Producto */}
+                      {pago.producto_descripcion && (
+                        <div className="col-span-2">
+                          <span className="text-xs text-slate-500">Producto</span>
+                          <p className="text-sm font-semibold text-slate-900">{pago.producto_descripcion}</p>
+                        </div>
+                      )}
+                      
+                      {/* Cantidad */}
+                      {pago.cantidad_total && (
+                        <div className="flex flex-col">
+                          <span className="text-xs text-slate-500">Cantidad</span>
+                          <span className="text-sm font-medium text-slate-700">{pago.cantidad_total} unidades</span>
+                        </div>
+                      )}
+
+                      {/* Precio */}
+                      <div className="flex flex-col">
+                        <span className="text-xs text-slate-500">Total</span>
+                        <span className="text-sm font-bold text-emerald-700">
+                          {formatPrice(pago.precio_final || pago.total)}
+                        </span>
                       </div>
-                    )}
-                    
-                    {/* Cantidad y Precio */}
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="text-sm text-slate-700">
-                        {pago.cantidad_total && (
-                          <span className="font-medium">{pago.cantidad_total} unidades</span>
-                        )}
-                      </div>
-                      <span className="text-sm font-bold text-emerald-700">
-                        {formatPrice(pago.precio_final || pago.total)}
-                      </span>
+                      
+                      {/* Forma de Pago */}
+                      {pago.forma_pago_detalle && (
+                        <div className="col-span-2">
+                          <span className="text-xs text-slate-500">Forma de pago</span>
+                          <div className="text-sm text-slate-700">💳 {pago.forma_pago_detalle}</div>
+                        </div>
+                      )}
                     </div>
-                    
-                    {/* Forma de Pago */}
-                    {pago.forma_pago_detalle && (
-                      <div className="text-xs text-slate-600 mb-1">
-                        💳 {pago.forma_pago_detalle}
-                      </div>
-                    )}
                     
                     {/* Estado y Fecha */}
                     <div className="flex items-center justify-between pt-2 border-t border-slate-200">
