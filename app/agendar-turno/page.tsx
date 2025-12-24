@@ -345,8 +345,8 @@ export default function AgendarTurnoPage() {
           </Card>
         )}
 
-        {/* Step 2: Seleccionar fecha */}
-        {step >= 2 && tipo && !fecha && (
+        {/* Step 2: Seleccionar fecha (NO para envío) */}
+        {step >= 2 && tipo && tipo !== "envio" && !fecha && (
           <Card className="bg-white border-2 border-blue-100 p-6 mb-6 shadow-xl">
             <h2 className="text-xl font-semibold text-slate-800 mb-6 flex items-center gap-3">
               <span className="bg-gradient-to-br from-blue-500 to-cyan-500 text-white rounded-xl w-10 h-10 flex items-center justify-center text-lg font-bold shadow-lg">3</span>
@@ -388,8 +388,8 @@ export default function AgendarTurnoPage() {
           </Card>
         )}
 
-        {/* Step 3: Seleccionar horario */}
-        {step >= 3 && fecha && !selectedSlot && (
+        {/* Step 3: Seleccionar horario (NO para envío) */}
+        {step >= 3 && tipo !== "envio" && fecha && !selectedSlot && (
           <Card className="bg-white border-2 border-blue-100 p-6 mb-6 shadow-xl">
             <h2 className="text-xl font-semibold text-slate-800 mb-6 flex items-center gap-3">
               <span className="bg-gradient-to-br from-blue-500 to-cyan-500 text-white rounded-xl w-10 h-10 flex items-center justify-center text-lg font-bold shadow-lg">4</span>
@@ -433,6 +433,39 @@ export default function AgendarTurnoPage() {
               <span className="bg-gradient-to-br from-purple-500 to-pink-500 text-white rounded-xl w-10 h-10 flex items-center justify-center text-lg font-bold shadow-lg">3</span>
               Datos de envío
             </h2>
+            {/* Mostrar resumen del pedido si existe */}
+            {leadData?.pedido && (
+              <div className="mb-6 bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200 rounded-xl p-5 shadow-md">
+                <h3 className="font-semibold text-slate-800 mb-3 flex items-center gap-2">
+                  <Car className="w-5 h-5 text-purple-600" />
+                  Productos de tu pedido
+                </h3>
+                <div className="space-y-2 mb-4">
+                  {leadData.pedido.items && leadData.pedido.items.length > 0 ? (
+                    leadData.pedido.items.map((item: any, idx: number) => (
+                      <div key={idx} className="bg-white rounded-lg p-3 border border-purple-100">
+                        <div className="font-medium text-slate-800">
+                          {item.marca} {item.modelo} - {item.medida}
+                        </div>
+                        <div className="text-sm text-slate-600">
+                          Cantidad: {item.cantidad} {item.cantidad === 1 ? 'neumático' : 'neumáticos'}
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-sm text-slate-600 bg-white rounded-lg p-3 border border-purple-100">
+                      {leadData.pedido.producto_descripcion || "Sin detalles de producto"}
+                    </div>
+                  )}
+                </div>
+                <div className="bg-amber-50 border-2 border-amber-200 rounded-lg p-3 flex items-start gap-2">
+                  <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                  <div className="text-sm text-amber-800">
+                    <span className="font-medium">¿Este no es tu pedido?</span> Escribinos por WhatsApp al <a href="https://wa.me/5491131849695" target="_blank" rel="noopener noreferrer" className="underline font-semibold hover:text-amber-900">+54 9 11 3184-9695</a> y te ayudamos.
+                  </div>
+                </div>
+              </div>
+            )}
             <form onSubmit={handleSubmit} className="space-y-5">
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -561,6 +594,41 @@ export default function AgendarTurnoPage() {
               <span className="bg-gradient-to-br from-blue-500 to-cyan-500 text-white rounded-xl w-10 h-10 flex items-center justify-center text-lg font-bold shadow-lg">5</span>
               Completá tus datos
             </h2>
+
+            {/* Mostrar resumen del pedido si existe */}
+            {leadData?.pedido && (
+              <div className="mb-6 bg-gradient-to-br from-blue-50 to-cyan-50 border-2 border-blue-200 rounded-xl p-5 shadow-md">
+                <h3 className="font-semibold text-slate-800 mb-3 flex items-center gap-2">
+                  <Car className="w-5 h-5 text-blue-600" />
+                  Productos de tu pedido
+                </h3>
+                <div className="space-y-2 mb-4">
+                  {leadData.pedido.items && leadData.pedido.items.length > 0 ? (
+                    leadData.pedido.items.map((item: any, idx: number) => (
+                      <div key={idx} className="bg-white rounded-lg p-3 border border-blue-100">
+                        <div className="font-medium text-slate-800">
+                          {item.marca} {item.modelo} - {item.medida}
+                        </div>
+                        <div className="text-sm text-slate-600">
+                          Cantidad: {item.cantidad} {item.cantidad === 1 ? 'neumático' : 'neumáticos'}
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-sm text-slate-600 bg-white rounded-lg p-3 border border-blue-100">
+                      {leadData.pedido.producto_descripcion || "Sin detalles de producto"}
+                    </div>
+                  )}
+                </div>
+                <div className="bg-amber-50 border-2 border-amber-200 rounded-lg p-3 flex items-start gap-2">
+                  <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                  <div className="text-sm text-amber-800">
+                    <span className="font-medium">¿Este no es tu pedido?</span> Escribinos por WhatsApp al <a href="https://wa.me/5491131849695" target="_blank" rel="noopener noreferrer" className="underline font-semibold hover:text-amber-900">+54 9 11 3184-9695</a> y te ayudamos.
+                  </div>
+                </div>
+              </div>
+            )}
+
             <form onSubmit={handleSubmit} className="space-y-5">
               <div>
                 <Label className="text-slate-700 flex items-center gap-2 mb-2 font-medium">
@@ -632,20 +700,6 @@ export default function AgendarTurnoPage() {
                   placeholder="ABC123"
                   maxLength={7}
                 />
-              </div>
-
-              <div>
-                <Label className="text-slate-700 mb-2 block font-medium">Cantidad de neumáticos</Label>
-                <select
-                  value={formData.cantidad_neumaticos}
-                  onChange={(e) => setFormData({ ...formData, cantidad_neumaticos: e.target.value })}
-                  className="w-full px-4 py-3 bg-blue-50 border-2 border-blue-200 rounded-lg text-slate-800 h-12 focus:border-blue-500 transition-colors"
-                >
-                  <option value="1">1 neumático</option>
-                  <option value="2">2 neumáticos</option>
-                  <option value="4">4 neumáticos</option>
-                  <option value="5">5 neumáticos (con auxilio)</option>
-                </select>
               </div>
 
               <div>

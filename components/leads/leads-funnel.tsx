@@ -25,8 +25,6 @@ export function LeadsFunnel({ leads }: LeadsFunnelProps) {
   // LÓGICA DE EMBUDO: cada etapa incluye a los que llegaron a esa etapa o más allá
   // Orden de progresión: nuevo -> en_conversacion -> cotizado -> esperando_pago -> pago_informado -> pedido_confirmado
   
-  const estadosProgresivos = ["nuevo", "en_conversacion", "cotizado", "esperando_pago", "pago_informado", "pedido_confirmado"]
-  
   // Total de leads (100%)
   const total = totalLeads
   
@@ -45,7 +43,7 @@ export function LeadsFunnel({ leads }: LeadsFunnelProps) {
     ["esperando_pago", "pago_informado", "pedido_confirmado"].includes(l.estado)
   ).length
   
-  // Leads con pago confirmado
+  // Leads con pago confirmado (incluye pago_informado y pedido_confirmado)
   const pagoConfirmado = leads.filter(l => 
     ["pago_informado", "pedido_confirmado"].includes(l.estado)
   ).length
