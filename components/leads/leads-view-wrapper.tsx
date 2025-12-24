@@ -148,7 +148,7 @@ export function LeadsViewWrapper({ leads, users, currentUser }: LeadsViewWrapper
 
       {/* Vista seleccionada */}
       {viewMode === "table" ? (
-        <LeadsTable leads={filteredLeads} />
+        <LeadsTable leads={filteredLeads} users={users} currentUser={currentUser} />
       ) : (
         <LeadsKanban leads={filteredLeads} users={users} currentUser={currentUser} />
       )}

@@ -16,9 +16,13 @@ import {
 } from "@/components/ui/table"
 import Link from "next/link"
 import type { Lead } from "@/lib/types/lead"
+import { LeadDetailPanel } from "./lead-detail-panel"
+import type { User as AuthUser } from "@/lib/auth"
 
 interface LeadsTableProps {
   leads: Lead[]
+  users?: Array<{ id: string; nombre: string; role: string }>
+  currentUser?: AuthUser
 }
 
 type SortField = "nombre" | "estado" | "fecha"
@@ -33,9 +37,20 @@ const estadoConfig: Record<string, { label: string; color: string }> = {
   perdido: { label: "Perdido", color: "bg-gray-100 text-gray-800" },
 }
 
-export function LeadsTable({ leads }: LeadsTableProps) {
+export function LeadsTable({ leads, users = [], currentUser }: LeadsTableProps) {
   const [sortBy, setSortBy] = useState<SortField>("fecha")
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc")
+  const [selectedLead, setSelectedLead] = useState<Lead | null>(null)
+
+  const handleLeadUpdate = async (updates: any) => {
+    // Recargar la página para obtener datos actualizados
+    window.location.reload()
+  }
+
+  const handleLeadDelete = async () => {
+    setSelectedLead(null)
+    window.location.reload()
+  }
 
   const sortedLeads = [...leads].sort((a, b) => {
     let compareValue = 0
@@ -235,18 +250,32 @@ export function LeadsTable({ leads }: LeadsTableProps) {
 
                 {/* Acciones */}
                 <TableCell className="text-right">
-                  <Link href={`/leads/${lead.id}`}>
-                    <Button variant="outline" size="sm">
-                      <ExternalLink className="w-3 h-3 mr-1" />
-                      Ver
-                    </Button>
-                  </Link>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setSelectedLead(lead)}
+                  >
+                    <ExternalLink className="w-3 h-3 mr-1" />
+                    Ver
+                  </Button>
                 </TableCell>
               </TableRow>
             ))
           )}
         </TableBody>
       </Table>
+
+      {/* Panel de detalle */}
+      {selectedLead && currentUser && (
+        <LeadDetailPanel
+          lead={selectedLead}
+          users={users}
+          currentUser={currentUser}
+          onClose={() => setSelectedLead(null)}
+          onUpdate={handleLeadUpdate}
+          onDelete={handleLeadDelete}
+        />
+      )}
     </div>
   )
 }
