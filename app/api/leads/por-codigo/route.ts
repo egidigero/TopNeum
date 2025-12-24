@@ -26,7 +26,6 @@ export async function GET(request: NextRequest) {
         l.id,
         l.telefono_whatsapp,
         l.nombre_cliente,
-        l.email,
         l.region,
         l.codigo_confirmacion,
         l.estado
@@ -137,7 +136,6 @@ export async function GET(request: NextRequest) {
         id: lead.id,
         nombre_cliente: lead.nombre_cliente,
         telefono_whatsapp: lead.telefono_whatsapp,
-        email: lead.email,
         region: lead.region,
         codigo: lead.codigo_confirmacion,
         estado: lead.estado
