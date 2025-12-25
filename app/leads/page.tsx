@@ -74,7 +74,7 @@ export default async function LeadsPage() {
                 )
               ), '[]'::json)
               FROM pedido_items pi
-              LEFT JOIN productos p ON p.id::text = pi.producto_sku
+              LEFT JOIN products p ON p.id::text = pi.producto_sku
               WHERE pi.pedido_id = lp.id
             )
           ) ORDER BY lp.created_at DESC
