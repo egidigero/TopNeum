@@ -51,12 +51,12 @@ interface LeadDetailPanelProps {
     turno_hora?: string | null
     turno_estado?: string | null
     consultas?: Array<{
-      id: string
+      id?: string
       medida_neumatico: string
       marca_preferida: string | null
       tipo_vehiculo: string | null
       cantidad: number
-      created_at: string
+      created_at?: string
     }> | null
   }
   users: Array<{ id: string; nombre: string; role: string }>
@@ -200,7 +200,7 @@ export function LeadDetailPanel({ lead, users, currentUser, onClose, onUpdate, o
                 <div className="space-y-2">
                   {lead.consultas.map((consulta, idx) => (
                     <div 
-                      key={consulta.id}
+                      key={consulta.id || idx}
                       className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-lg p-3 space-y-2"
                     >
                       <div className="flex items-center gap-2">
