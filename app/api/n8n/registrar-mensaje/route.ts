@@ -55,23 +55,24 @@ export async function POST(request: NextRequest) {
     `
     const lead_id = leadResult[0].lead_id
 
-    // Registrar mensaje
-    await sql`
-      INSERT INTO lead_mensajes (
-        lead_id,
-        direccion,
-        contenido,
-        enviado_por,
-        mensaje_id_whatsapp
-      )
-      VALUES (
-        ${lead_id},
-        ${direccion},
-        ${contenido},
-        ${enviado_por},
-        ${mensaje_id_whatsapp || null}
-      )
-    `
+    // ⚠️ NOTA: Mensajes NO se guardan en BD (solo se procesan en tiempo real)
+    // Si se necesita historial, descomentar:
+    // await sql`
+    //   INSERT INTO lead_mensajes (
+    //     lead_id,
+    //     direccion,
+    //     contenido,
+    //     enviado_por,
+    //     mensaje_id_whatsapp
+    //   )
+    //   VALUES (
+    //     ${lead_id},
+    //     ${direccion},
+    //     ${contenido},
+    //     ${enviado_por},
+    //     ${mensaje_id_whatsapp || null}
+    //   )
+    // `
 
     // Actualizar última interacción del lead
     await sql`
@@ -128,27 +129,37 @@ export async function GET(request: NextRequest) {
       })
     }
 
-    // Obtener mensajes
-    const mensajes = await sql`
-      SELECT 
-        id,
-        direccion,
-        contenido,
-        enviado_por,
-        mensaje_id_whatsapp,
-        created_at
-      FROM lead_mensajes
-      WHERE lead_id = ${lead[0].id}
-      ORDER BY created_at DESC
-      LIMIT ${Number.parseInt(limit)}
-    `
-
+    // ⚠️ NOTA: Tabla lead_mensajes no está en uso
+    // Retornar vacío por ahora (historial de mensajes deshabilitado)
     return NextResponse.json({
       exists: true,
       lead_id: lead[0].id,
-      total_mensajes: mensajes.length,
-      mensajes
+      total_mensajes: 0,
+      mensajes: [],
+      nota: 'Historial de mensajes no disponible - solo procesamiento en tiempo real'
     })
+
+    // Si se necesita historial, descomentar:
+    // const mensajes = await sql`
+    //   SELECT 
+    //     id,
+    //     direccion,
+    //     contenido,
+    //     enviado_por,
+    //     mensaje_id_whatsapp,
+    //     created_at
+    //   FROM lead_mensajes
+    //   WHERE lead_id = ${lead[0].id}
+    //   ORDER BY created_at DESC
+    //   LIMIT ${Number.parseInt(limit)}
+    // `
+    //
+    // return NextResponse.json({
+    //   exists: true,
+    //   lead_id: lead[0].id,
+    //   total_mensajes: mensajes.length,
+    //   mensajes
+    // })
 
   } catch (error: any) {
     console.error('[n8n-mensaje] ❌ Error GET:', error)
