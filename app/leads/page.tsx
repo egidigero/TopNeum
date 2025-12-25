@@ -68,7 +68,7 @@ export default async function LeadsPage() {
                   'precio_unitario', pi.precio_unitario,
                   'subtotal', pi.subtotal,
                   'producto_descripcion', COALESCE(
-                    p.marca || ' ' || p.diseno || ' ' || p.medida,
+                    p.familia || ' ' || p.marca || ' ' || p.diseno || ' ' || p.medida,
                     'Producto no encontrado'
                   )
                 )

@@ -17,13 +17,10 @@ export async function GET(
       SELECT 
         id,
         lead_id,
-        productos,
         producto_descripcion,
         cantidad_total,
         forma_pago,
         forma_pago_detalle,
-        subtotal,
-        descuento_porcentaje,
         total,
         precio_final,
         estado_pago,
@@ -38,6 +35,43 @@ export async function GET(
     return NextResponse.json({ pagos })
   } catch (error: any) {
     console.error("[v0] Fetch pagos error:", error)
+    return NextResponse.json({ error: error.message || "Error interno" }, { status: 500 })
+  }
+}
+
+export async function PATCH(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    await requireAuth()
+    
+    const { id } = await params
+    const body = await request.json()
+    const { pedido_id, estado_pago, fecha_pago } = body
+
+    if (!pedido_id) {
+      return NextResponse.json({ error: "pedido_id es requerido" }, { status: 400 })
+    }
+
+    // Actualizar estado del pedido
+    const result = await sql`
+      UPDATE lead_pedidos
+      SET 
+        estado_pago = ${estado_pago},
+        fecha_pago = ${fecha_pago || new Date()}
+      WHERE id = ${pedido_id}
+      AND lead_id = ${id}
+      RETURNING *
+    `
+
+    if (result.length === 0) {
+      return NextResponse.json({ error: "Pedido no encontrado" }, { status: 404 })
+    }
+
+    return NextResponse.json({ pedido: result[0] })
+  } catch (error: any) {
+    console.error("[v0] Update pago error:", error)
     return NextResponse.json({ error: error.message || "Error interno" }, { status: 500 })
   }
 }

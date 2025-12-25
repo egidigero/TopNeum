@@ -473,6 +473,60 @@ export function LeadDetailPanel({ lead, users, currentUser, onClose, onUpdate, o
                           {new Date(pago.fecha_pedido).toLocaleDateString('es-AR')}
                         </span>
                       </div>
+                      {pago.estado_pago !== 'confirmado' && (
+                        <div className="flex gap-2 mt-2">
+                          <Button
+                            size="sm"
+                            variant="default"
+                            className="flex-1 bg-emerald-600 hover:bg-emerald-700"
+                            onClick={async () => {
+                              try {
+                                const res = await fetch(`/api/leads/${lead.id}/pagos`, {
+                                  method: 'PATCH',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({
+                                    pedido_id: pago.id,
+                                    estado_pago: 'confirmado',
+                                    fecha_pago: new Date().toISOString()
+                                  })
+                                })
+                                if (res.ok) {
+                                  window.location.reload()
+                                }
+                              } catch (error) {
+                                console.error('Error confirmando pago:', error)
+                              }
+                            }}
+                          >
+                            ✓ Confirmar
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="flex-1"
+                            onClick={async () => {
+                              try {
+                                const res = await fetch(`/api/leads/${lead.id}/pagos`, {
+                                  method: 'PATCH',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({
+                                    pedido_id: pago.id,
+                                    estado_pago: 'rechazado',
+                                    fecha_pago: new Date().toISOString()
+                                  })
+                                })
+                                if (res.ok) {
+                                  window.location.reload()
+                                }
+                              } catch (error) {
+                                console.error('Error rechazando pago:', error)
+                              }
+                            }}
+                          >
+                            ✗ Rechazar
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
