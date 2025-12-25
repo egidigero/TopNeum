@@ -66,14 +66,15 @@ export default async function LeadsPage() {
                   'producto_sku', pi.producto_sku,
                   'cantidad', pi.cantidad,
                   'precio_unitario', pi.precio_unitario,
+                  'subtotal', pi.subtotal,
                   'producto_descripcion', COALESCE(
-                    p.descripcion_larga,
-                    p.marca || ' ' || p.familia || ' ' || p.medida
+                    p.marca || ' ' || p.diseno || ' ' || p.medida,
+                    'Producto no encontrado'
                   )
                 )
               ), '[]'::json)
               FROM pedido_items pi
-              LEFT JOIN products p ON p.sku = pi.producto_sku
+              LEFT JOIN productos p ON p.id::text = pi.producto_sku
               WHERE pi.pedido_id = lp.id
             )
           ) ORDER BY lp.created_at DESC

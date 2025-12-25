@@ -90,6 +90,20 @@ try {
         $SKU1 = $producto.id
         Write-Host "   SKU capturado: $SKU1" -ForegroundColor White
         $PRODUCTO1_DESC = "$($producto.marca) $($producto.diseno) $($producto.medida)"
+    }    
+    # Mostrar mensaje formateado
+    if ($resp5.mensaje_formateado) {
+        Write-Host "`n💬 MENSAJE FORMATEADO (enviado por WhatsApp):" -ForegroundColor Cyan
+        Write-Host "----------------------------------------" -ForegroundColor DarkGray
+        Write-Host $resp5.mensaje_formateado -ForegroundColor White
+        Write-Host "----------------------------------------" -ForegroundColor DarkGray
+    }    
+    # Mostrar mensaje formateado
+    if ($resp3.mensaje_formateado) {
+        Write-Host "`n💬 MENSAJE FORMATEADO (enviado por WhatsApp):" -ForegroundColor Cyan
+        Write-Host "----------------------------------------" -ForegroundColor DarkGray
+        Write-Host $resp3.mensaje_formateado -ForegroundColor White
+        Write-Host "----------------------------------------" -ForegroundColor DarkGray
     }
 } catch {
     Write-Host "ERROR: $_" -ForegroundColor Red
@@ -202,8 +216,14 @@ try {
     Write-Host "   Pedido ID: $($resp7.pedido.id)" -ForegroundColor White
     Write-Host "   Total items: $($resp7.pedido.items.Count)" -ForegroundColor White
     Write-Host "   Total: `$$($resp7.pedido.total)" -ForegroundColor White
-    $PEDIDO_ID = $resp7.pedido.id
-} catch {
+    $PEDIDO_ID = $resp7.pedido.id    
+    # Mostrar mensaje formateado
+    if ($resp7.mensaje_formateado) {
+        Write-Host "`n💬 MENSAJE FORMATEADO (enviado por WhatsApp):" -ForegroundColor Cyan
+        Write-Host "----------------------------------------" -ForegroundColor DarkGray
+        Write-Host $resp7.mensaje_formateado -ForegroundColor White
+        Write-Host "----------------------------------------" -ForegroundColor DarkGray
+    }} catch {
     Write-Host "ERROR: $_" -ForegroundColor Red
     Write-Host "Body enviado:" -ForegroundColor Yellow
     Write-Host $body7 -ForegroundColor Gray

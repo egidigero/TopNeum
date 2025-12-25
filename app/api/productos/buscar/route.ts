@@ -198,7 +198,6 @@ export async function POST(request: NextRequest) {
     mensajeFormateado += `✅ Todos incluyen envío gratis a todo el país (llevando 2 o más).\n`
     mensajeFormateado += `� Consultá por 6 y 12 cuotas.\n`
     mensajeFormateado += `�️ 5 años de garantía oficial de fábrica.`
-
     return NextResponse.json({
       productos: productosFormateados,
       total_encontrados: productosFormateados.length,

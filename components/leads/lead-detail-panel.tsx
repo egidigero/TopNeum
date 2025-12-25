@@ -58,6 +58,20 @@ interface LeadDetailPanelProps {
       cantidad: number
       created_at?: string
     }> | null
+    pedidos?: Array<{
+      id?: string
+      total: number
+      forma_pago: string
+      estado_pago?: string
+      created_at?: string
+      items?: Array<{
+        producto_sku: string
+        cantidad: number
+        precio_unitario: number
+        subtotal?: number
+        producto_descripcion?: string
+      }>
+    }> | null
   }
   users: Array<{ id: string; nombre: string; role: string }>
   currentUser: AuthUser
@@ -223,6 +237,73 @@ export function LeadDetailPanel({ lead, users, currentUser, onClose, onUpdate, o
                           <span className="text-slate-400 italic">📦 Cantidad no especificada</span>
                         )}
                       </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* 🆕 PEDIDOS PENDIENTES */}
+            {lead.pedidos && lead.pedidos.length > 0 && (
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-emerald-700 flex items-center gap-2">
+                  <ShoppingCart className="w-4 h-4" />
+                  Pedido Armado ({lead.pedidos.length})
+                </label>
+                <div className="space-y-3">
+                  {lead.pedidos.map((pedido, idx) => (
+                    <div 
+                      key={pedido.id || `pedido-${idx}`}
+                      className="bg-gradient-to-br from-emerald-50 to-green-50 border-2 border-emerald-300 rounded-lg p-4 space-y-3"
+                    >
+                      <div className="flex items-center justify-between">
+                        <Badge className="bg-emerald-600 text-white text-xs font-bold">
+                          {pedido.forma_pago}
+                        </Badge>
+                        {pedido.estado_pago && (
+                          <Badge variant="outline" className="border-amber-400 text-amber-700 text-xs">
+                            {pedido.estado_pago}
+                          </Badge>
+                        )}
+                      </div>
+                      
+                      {/* Items del pedido */}
+                      {pedido.items && pedido.items.length > 0 && (
+                        <div className="space-y-2 border-t border-emerald-200 pt-2">
+                          <div className="text-xs font-semibold text-emerald-700">Productos:</div>
+                          {pedido.items.map((item, itemIdx) => (
+                            <div key={itemIdx} className="bg-white/60 rounded p-2 space-y-1">
+                              {item.producto_descripcion && (
+                                <div className="text-xs font-medium text-emerald-900">
+                                  {item.producto_descripcion}
+                                </div>
+                              )}
+                              <div className="flex items-center justify-between text-xs text-emerald-700">
+                                <span>📦 {item.cantidad} x {formatPrice(item.precio_unitario)}</span>
+                                <span className="font-bold">{formatPrice(item.subtotal || (item.cantidad * item.precio_unitario))}</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      
+                      {/* Total del pedido */}
+                      <div className="flex justify-between items-center pt-2 border-t-2 border-emerald-400">
+                        <span className="text-emerald-800 font-bold text-sm">TOTAL</span>
+                        <span className="text-emerald-900 font-bold text-lg">{formatPrice(pedido.total)}</span>
+                      </div>
+                      
+                      {pedido.created_at && (
+                        <div className="text-xs text-emerald-600">
+                          📅 {new Date(pedido.created_at).toLocaleDateString('es-AR', { 
+                          day: '2-digit', 
+                          month: '2-digit', 
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
