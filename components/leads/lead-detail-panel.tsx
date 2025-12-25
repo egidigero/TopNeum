@@ -115,6 +115,11 @@ export function LeadDetailPanel({ lead, users, currentUser, onClose, onUpdate, o
     onUpdate({ estado: nuevoEstado, ultimo_contacto_at: new Date().toISOString() })
   }
 
+  // Debug: verificar si llegan los pedidos
+  console.log('[LeadDetailPanel] Lead ID:', lead.id)
+  console.log('[LeadDetailPanel] Pedidos:', lead.pedidos)
+  console.log('[LeadDetailPanel] Consultas:', lead.consultas)
+
   const handleDelete = async () => {
     if (!onDelete) return
     
