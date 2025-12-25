@@ -81,9 +81,10 @@ export async function POST(request: NextRequest) {
     })
 
     // Detectar región automáticamente desde el teléfono
-    // +54911... o +5411... = CABA (código de área 11)
+    // 54911... o 5411... o +54911... o +5411... = CABA (código de área 11)
     // Cualquier otro = INTERIOR
-    const region = (telefono_whatsapp.startsWith('+54911') || telefono_whatsapp.startsWith('+5411')) 
+    const region = (telefono_whatsapp.startsWith('54911') || telefono_whatsapp.startsWith('5411') ||
+                    telefono_whatsapp.startsWith('+54911') || telefono_whatsapp.startsWith('+5411')) 
       ? 'CABA' 
       : 'INTERIOR'
     

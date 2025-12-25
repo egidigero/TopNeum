@@ -6,7 +6,28 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     console.log("[buscar_productos] Body recibido:", JSON.stringify(body))
     
-    let { medida_neumatico, marca, region } = body
+    let { medida_neumatico, marca, region, telefono_whatsapp } = body
+
+    // Si viene teléfono, detectar región automáticamente
+    if (telefono_whatsapp && !region) {
+      // Normalizar teléfono
+      let telefono = String(telefono_whatsapp).replace(/[\s\-()]/g, '')
+      if (!telefono.startsWith('+')) {
+        if (telefono.startsWith('54')) {
+          telefono = '+' + telefono
+        } else {
+          telefono = '+54' + telefono
+        }
+      }
+      
+      // Detectar región: 54911 o 5411 o +54911 o +5411 = CABA, resto = INTERIOR
+      region = (telefono.startsWith('54911') || telefono.startsWith('5411') ||
+                telefono.startsWith('+54911') || telefono.startsWith('+5411')) 
+        ? 'CABA' 
+        : 'INTERIOR'
+      
+      console.log("[buscar_productos] Región auto-detectada desde teléfono:", region)
+    }
 
     // Normalizar medida (remover espacios antes de R)
     if (medida_neumatico) {
