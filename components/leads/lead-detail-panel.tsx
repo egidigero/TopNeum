@@ -50,6 +50,14 @@ interface LeadDetailPanelProps {
     turno_fecha?: string | null
     turno_hora?: string | null
     turno_estado?: string | null
+    consultas?: Array<{
+      id: string
+      medida_neumatico: string
+      marca_preferida: string | null
+      tipo_vehiculo: string | null
+      cantidad: number
+      created_at: string
+    }> | null
   }
   users: Array<{ id: string; nombre: string; role: string }>
   currentUser: AuthUser
@@ -180,6 +188,40 @@ export function LeadDetailPanel({ lead, users, currentUser, onClose, onUpdate, o
                   <span className="font-semibold">Mensaje inicial</span>
                 </div>
                 <p className="text-sm text-slate-700">{lead.mensaje_inicial}</p>
+              </div>
+            )}
+
+            {/* 🆕 TODAS LAS CONSULTAS */}
+            {lead.consultas && lead.consultas.length > 0 && (
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-slate-700">
+                  Consultas ({lead.consultas.length})
+                </label>
+                <div className="space-y-2">
+                  {lead.consultas.map((consulta, idx) => (
+                    <div 
+                      key={consulta.id}
+                      className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-lg p-3 space-y-2"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Badge className="bg-blue-600 text-white text-xs font-mono">
+                          {consulta.medida_neumatico}
+                        </Badge>
+                        {consulta.marca_preferida && (
+                          <Badge variant="outline" className="border-blue-400 text-blue-700 text-xs">
+                            {consulta.marca_preferida}
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-4 text-xs text-slate-600">
+                        {consulta.tipo_vehiculo && (
+                          <span>🚗 {consulta.tipo_vehiculo}</span>
+                        )}
+                        <span>📦 {consulta.cantidad} unidades</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 
