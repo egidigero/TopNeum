@@ -25,7 +25,7 @@ $body1 = @{
 } | ConvertTo-Json
 
 try {
-    $resp1 = Invoke-RestMethod -Uri "$baseUrl/api/leads/actualizar" -Method POST -Headers @{'Content-Type'='application/json'} -Body $body1
+    $resp1 = Invoke-RestMethod -Uri "$baseUrl/api/n8n/actualizar-estado" -Method POST -Headers @{'Content-Type'='application/json'} -Body $body1
     Write-Host "OK Lead creado en tabla leads" -ForegroundColor Green
     Write-Host "   Lead ID: $($resp1.lead.id)" -ForegroundColor White
     Write-Host "   Estado: $($resp1.lead.estado)" -ForegroundColor White
@@ -54,7 +54,7 @@ $body2 = @{
 } | ConvertTo-Json
 
 try {
-    $resp2 = Invoke-RestMethod -Uri "$baseUrl/api/leads/actualizar" -Method POST -Headers @{'Content-Type'='application/json'} -Body $body2
+    $resp2 = Invoke-RestMethod -Uri "$baseUrl/api/n8n/actualizar-estado" -Method POST -Headers @{'Content-Type'='application/json'} -Body $body2
     Write-Host "OK Consulta guardada en lead_consultas" -ForegroundColor Green
     Write-Host "   Estado lead: $($resp2.lead.estado)" -ForegroundColor White
     Write-Host "   Tiene consulta: $($resp2.consulta -ne $null)" -ForegroundColor White
@@ -109,7 +109,7 @@ $body4 = @{
 } | ConvertTo-Json
 
 try {
-    $resp4 = Invoke-RestMethod -Uri "$baseUrl/api/leads/actualizar" -Method POST -Headers @{'Content-Type'='application/json'} -Body $body4
+    $resp4 = Invoke-RestMethod -Uri "$baseUrl/api/n8n/actualizar-estado" -Method POST -Headers @{'Content-Type'='application/json'} -Body $body4
     Write-Host "OK Segunda consulta guardada" -ForegroundColor Green
     Write-Host "   El lead ahora tiene 2 consultas diferentes" -ForegroundColor Cyan
 } catch {
@@ -157,7 +157,7 @@ $body6 = @{
 } | ConvertTo-Json
 
 try {
-    $resp6 = Invoke-RestMethod -Uri "$baseUrl/api/leads/actualizar" -Method POST -Headers @{'Content-Type'='application/json'} -Body $body6
+    $resp6 = Invoke-RestMethod -Uri "$baseUrl/api/n8n/actualizar-estado" -Method POST -Headers @{'Content-Type'='application/json'} -Body $body6
     Write-Host "OK Estado actualizado a cotizado" -ForegroundColor Green
 } catch {
     Write-Host "ERROR: $_" -ForegroundColor Red
@@ -183,7 +183,7 @@ $body7 = @{
 } | ConvertTo-Json -Depth 3
 
 try {
-    $resp7 = Invoke-RestMethod -Uri "$baseUrl/api/leads/actualizar" -Method POST -Headers @{'Content-Type'='application/json'} -Body $body7
+    $resp7 = Invoke-RestMethod -Uri "$baseUrl/api/n8n/actualizar-estado" -Method POST -Headers @{'Content-Type'='application/json'} -Body $body7
     Write-Host "OK Pedido creado en lead_pedidos!" -ForegroundColor Green
     Write-Host "   Estado: $($resp7.lead.estado)" -ForegroundColor White
     Write-Host "   Pedido ID: $($resp7.pedido.id)" -ForegroundColor White

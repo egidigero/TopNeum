@@ -133,32 +133,52 @@ export async function POST(request: NextRequest) {
     `
 
     // ===================
-    // GUARDAR CONSULTA
+    // GUARDAR CONSULTA (EVITAR DUPLICADOS)
     // ===================
     if (medida_neumatico) {
       console.log('[n8n-estado-v2] 📋 Guardando consulta:', medida_neumatico, marca_preferida || '')
       
-      // SIEMPRE insertar nueva consulta
-      // Permite múltiples consultas de la misma medida con diferentes marcas
-      // Ej: Cliente consulta 185/60R15 Yokohama, luego 185/60R15 Pirelli → 2 registros
-      await sql`
-        INSERT INTO lead_consultas (
-          lead_id, 
-          medida_neumatico, 
-          marca_preferida, 
-          tipo_vehiculo,
-          cantidad
-        )
-        VALUES (
-          ${lead_id},
-          ${medida_neumatico},
-          ${marca_preferida || null},
-          ${tipo_vehiculo || null},
-          ${cantidad || 4}
-        )
+      // Verificar si ya existe consulta idéntica (misma medida + marca)
+      const consultaExistente = await sql`
+        SELECT id FROM lead_consultas
+        WHERE lead_id = ${lead_id}
+          AND medida_neumatico = ${medida_neumatico}
+          AND COALESCE(marca_preferida, '') = COALESCE(${marca_preferida || null}, '')
+        LIMIT 1
       `
       
-      console.log('[n8n-estado-v2] ✅ Consulta guardada')
+      if (consultaExistente.length > 0) {
+        console.log('[n8n-estado-v2] ⚠️ Consulta duplicada detectada, actualizando existente')
+        
+        // Actualizar consulta existente
+        await sql`
+          UPDATE lead_consultas
+          SET 
+            tipo_vehiculo = COALESCE(${tipo_vehiculo || null}, tipo_vehiculo),
+            cantidad = ${cantidad || 4},
+            updated_at = NOW()
+          WHERE id = ${consultaExistente[0].id}
+        `
+      } else {
+        // Insertar nueva consulta
+        await sql`
+          INSERT INTO lead_consultas (
+            lead_id, 
+            medida_neumatico, 
+            marca_preferida, 
+            tipo_vehiculo,
+            cantidad
+          )
+          VALUES (
+            ${lead_id},
+            ${medida_neumatico},
+            ${marca_preferida || null},
+            ${tipo_vehiculo || null},
+            ${cantidad || 4}
+          )
+        `
+        console.log('[n8n-estado-v2] ✅ Consulta nueva guardada')
+      }
     }
 
     // Actualizar tipo_vehiculo sin medida (para última consulta)
@@ -215,76 +235,76 @@ export async function POST(request: NextRequest) {
           continue
         }
         
-        // Buscar producto en BD por SKU o ID
-        let productoResult
+        // Detectar si sku es UUID o SKU string
+        const isUUID = String(sku).includes('-') && String(sku).length > 30
         
-        // Determinar si es UUID (id) o string (sku)
-        const isUUID = sku.includes('-') && sku.length > 30
+        // Buscar producto en BD - AQUÍ SE VALIDA TODO
+        let productoResult
         
         if (formaPagoFinal === '3_cuotas') {
           if (isUUID) {
             productoResult = await sql`
-              SELECT sku, marca, familia, medida, indice, cuota_3 as precio_unitario
+              SELECT id, sku, marca, familia, medida, indice, cuota_3 as precio_unitario
               FROM products WHERE id = ${sku} AND tiene_stock = true LIMIT 1
             `
           } else {
             productoResult = await sql`
-              SELECT sku, marca, familia, medida, indice, cuota_3 as precio_unitario
+              SELECT id, sku, marca, familia, medida, indice, cuota_3 as precio_unitario
               FROM products WHERE sku = ${sku} AND tiene_stock = true LIMIT 1
             `
           }
         } else if (formaPagoFinal === '6_cuotas') {
           if (isUUID) {
             productoResult = await sql`
-              SELECT sku, marca, familia, medida, indice, cuota_6 as precio_unitario
+              SELECT id, sku, marca, familia, medida, indice, cuota_6 as precio_unitario
               FROM products WHERE id = ${sku} AND tiene_stock = true LIMIT 1
             `
           } else {
             productoResult = await sql`
-              SELECT sku, marca, familia, medida, indice, cuota_6 as precio_unitario
+              SELECT id, sku, marca, familia, medida, indice, cuota_6 as precio_unitario
               FROM products WHERE sku = ${sku} AND tiene_stock = true LIMIT 1
             `
           }
         } else if (formaPagoFinal === '12_cuotas') {
           if (isUUID) {
             productoResult = await sql`
-              SELECT sku, marca, familia, medida, indice, cuota_12 as precio_unitario
+              SELECT id, sku, marca, familia, medida, indice, cuota_12 as precio_unitario
               FROM products WHERE id = ${sku} AND tiene_stock = true LIMIT 1
             `
           } else {
             productoResult = await sql`
-              SELECT sku, marca, familia, medida, indice, cuota_12 as precio_unitario
+              SELECT id, sku, marca, familia, medida, indice, cuota_12 as precio_unitario
               FROM products WHERE sku = ${sku} AND tiene_stock = true LIMIT 1
             `
           }
         } else if (formaPagoFinal.includes('transferencia')) {
           if (isUUID) {
             productoResult = await sql`
-              SELECT sku, marca, familia, medida, indice, mayorista_sin_fact as precio_unitario
+              SELECT id, sku, marca, familia, medida, indice, mayorista_sin_fact as precio_unitario
               FROM products WHERE id = ${sku} AND tiene_stock = true LIMIT 1
             `
           } else {
             productoResult = await sql`
-              SELECT sku, marca, familia, medida, indice, mayorista_sin_fact as precio_unitario
+              SELECT id, sku, marca, familia, medida, indice, mayorista_sin_fact as precio_unitario
               FROM products WHERE sku = ${sku} AND tiene_stock = true LIMIT 1
             `
           }
         } else {
           if (isUUID) {
             productoResult = await sql`
-              SELECT sku, marca, familia, medida, indice, efectivo_bsas_sin_iva as precio_unitario
+              SELECT id, sku, marca, familia, medida, indice, efectivo_bsas_sin_iva as precio_unitario
               FROM products WHERE id = ${sku} AND tiene_stock = true LIMIT 1
             `
           } else {
             productoResult = await sql`
-              SELECT sku, marca, familia, medida, indice, efectivo_bsas_sin_iva as precio_unitario
+              SELECT id, sku, marca, familia, medida, indice, efectivo_bsas_sin_iva as precio_unitario
               FROM products WHERE sku = ${sku} AND tiene_stock = true LIMIT 1
             `
           }
         }
         
         if (productoResult.length === 0) {
-          console.error('[n8n-estado-v2] ❌ SKU/ID no encontrado o sin stock:', sku)
+          console.error('[n8n-estado-v2] ❌ SKU no encontrado o sin stock:', sku)
           return NextResponse.json({
             error: `Producto con SKU ${sku} no encontrado o sin stock`
           }, { status: 400 })
