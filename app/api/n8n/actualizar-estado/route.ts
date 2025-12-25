@@ -170,17 +170,17 @@ export async function POST(request: NextRequest) {
       if (consultaExistente.length > 0) {
         console.log('[n8n-estado-v2] ⚠️ Consulta duplicada detectada, actualizando existente')
         
-        // Actualizar consulta existente
+        // Actualizar consulta existente (solo si vienen datos nuevos)
         await sql`
           UPDATE lead_consultas
           SET 
             tipo_vehiculo = COALESCE(${tipo_vehiculo || null}, tipo_vehiculo),
-            cantidad = ${cantidad || 4},
+            cantidad = COALESCE(${cantidad || null}, cantidad),
             updated_at = NOW()
           WHERE id = ${consultaExistente[0].id}
         `
       } else {
-        // Insertar nueva consulta
+        // Insertar nueva consulta (cantidad NULL si no la especificó)
         await sql`
           INSERT INTO lead_consultas (
             lead_id, 
@@ -194,7 +194,7 @@ export async function POST(request: NextRequest) {
             ${medida_neumatico},
             ${marca_preferida || null},
             ${tipo_vehiculo || null},
-            ${cantidad || 4}
+            ${cantidad || null}
           )
         `
         console.log('[n8n-estado-v2] ✅ Consulta nueva guardada')

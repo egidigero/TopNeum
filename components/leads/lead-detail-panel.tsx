@@ -217,7 +217,11 @@ export function LeadDetailPanel({ lead, users, currentUser, onClose, onUpdate, o
                         {consulta.tipo_vehiculo && (
                           <span>🚗 {consulta.tipo_vehiculo}</span>
                         )}
-                        <span>📦 {consulta.cantidad} unidades</span>
+                        {consulta.cantidad ? (
+                          <span>📦 {consulta.cantidad} unidades</span>
+                        ) : (
+                          <span className="text-slate-400 italic">📦 Cantidad no especificada</span>
+                        )}
                       </div>
                     </div>
                   ))}

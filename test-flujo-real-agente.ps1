@@ -43,7 +43,7 @@ Read-Host
 # ========================================
 # PASO 2: Cliente consulta PRIMERA medida
 # ========================================
-Write-Host "`n[CONVERSACION] Cliente: 'Necesito 185/65R15 Yokohama para mi Ford Ka'" -ForegroundColor Yellow
+Write-Host "`n[CONVERSACION] Cliente: 'Necesito 4 cubiertas 185/65R15 Yokohama para mi Ford Ka'" -ForegroundColor Yellow
 Write-Host "[AGENTE] Creando consulta en lead_consultas..." -ForegroundColor Gray
 
 $body2 = @{
@@ -52,8 +52,8 @@ $body2 = @{
     tipo_vehiculo = "Ford Ka"
     medida_neumatico = "185/65R15"
     marca_preferida = "Yokohama"
-    cantidad = 4
-    notas = "Cliente consulta por 185/65R15 Yokohama para Ford Ka"
+    cantidad = 4  # Cliente SÍ especifica cantidad
+    notas = "Cliente consulta por 4 cubiertas 185/65R15 Yokohama para Ford Ka"
 } | ConvertTo-Json
 
 try {
@@ -103,7 +103,7 @@ Read-Host
 # ========================================
 # PASO 4: Cliente consulta SEGUNDA medida (otro producto)
 # ========================================
-Write-Host "`n[CONVERSACION] Cliente: 'Tambien necesito 195/60R15 Hankook para mi otro auto'" -ForegroundColor Yellow
+Write-Host "`n[CONVERSACION] Cliente: 'Tambien necesito 2 cubiertas 195/60R15 Hankook para mi otro auto'" -ForegroundColor Yellow
 Write-Host "[AGENTE] Creando SEGUNDA consulta en lead_consultas..." -ForegroundColor Gray
 
 $body4 = @{
@@ -111,8 +111,8 @@ $body4 = @{
     medida_neumatico = "195/60R15"
     marca_preferida = "Hankook"
     tipo_vehiculo = "Otro vehiculo"
-    cantidad = 2
-    notas = "Cliente tambien consulta 195/60R15 Hankook"
+    cantidad = 2  # Cliente SÍ especifica cantidad
+    notas = "Cliente tambien consulta 2 cubiertas 195/60R15 Hankook"
 } | ConvertTo-Json
 
 try {
