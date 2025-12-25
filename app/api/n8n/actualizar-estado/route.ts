@@ -215,38 +215,76 @@ export async function POST(request: NextRequest) {
           continue
         }
         
-        // Buscar producto en BD - AQUÍ SE VALIDA TODO
+        // Buscar producto en BD por SKU o ID
         let productoResult
         
+        // Determinar si es UUID (id) o string (sku)
+        const isUUID = sku.includes('-') && sku.length > 30
+        
         if (formaPagoFinal === '3_cuotas') {
-          productoResult = await sql`
-            SELECT sku, marca, familia, medida, indice, cuota_3 as precio_unitario
-            FROM products WHERE sku = ${sku} AND tiene_stock = true LIMIT 1
-          `
+          if (isUUID) {
+            productoResult = await sql`
+              SELECT sku, marca, familia, medida, indice, cuota_3 as precio_unitario
+              FROM products WHERE id = ${sku} AND tiene_stock = true LIMIT 1
+            `
+          } else {
+            productoResult = await sql`
+              SELECT sku, marca, familia, medida, indice, cuota_3 as precio_unitario
+              FROM products WHERE sku = ${sku} AND tiene_stock = true LIMIT 1
+            `
+          }
         } else if (formaPagoFinal === '6_cuotas') {
-          productoResult = await sql`
-            SELECT sku, marca, familia, medida, indice, cuota_6 as precio_unitario
-            FROM products WHERE sku = ${sku} AND tiene_stock = true LIMIT 1
-          `
+          if (isUUID) {
+            productoResult = await sql`
+              SELECT sku, marca, familia, medida, indice, cuota_6 as precio_unitario
+              FROM products WHERE id = ${sku} AND tiene_stock = true LIMIT 1
+            `
+          } else {
+            productoResult = await sql`
+              SELECT sku, marca, familia, medida, indice, cuota_6 as precio_unitario
+              FROM products WHERE sku = ${sku} AND tiene_stock = true LIMIT 1
+            `
+          }
         } else if (formaPagoFinal === '12_cuotas') {
-          productoResult = await sql`
-            SELECT sku, marca, familia, medida, indice, cuota_12 as precio_unitario
-            FROM products WHERE sku = ${sku} AND tiene_stock = true LIMIT 1
-          `
+          if (isUUID) {
+            productoResult = await sql`
+              SELECT sku, marca, familia, medida, indice, cuota_12 as precio_unitario
+              FROM products WHERE id = ${sku} AND tiene_stock = true LIMIT 1
+            `
+          } else {
+            productoResult = await sql`
+              SELECT sku, marca, familia, medida, indice, cuota_12 as precio_unitario
+              FROM products WHERE sku = ${sku} AND tiene_stock = true LIMIT 1
+            `
+          }
         } else if (formaPagoFinal.includes('transferencia')) {
-          productoResult = await sql`
-            SELECT sku, marca, familia, medida, indice, mayorista_sin_fact as precio_unitario
-            FROM products WHERE sku = ${sku} AND tiene_stock = true LIMIT 1
-          `
+          if (isUUID) {
+            productoResult = await sql`
+              SELECT sku, marca, familia, medida, indice, mayorista_sin_fact as precio_unitario
+              FROM products WHERE id = ${sku} AND tiene_stock = true LIMIT 1
+            `
+          } else {
+            productoResult = await sql`
+              SELECT sku, marca, familia, medida, indice, mayorista_sin_fact as precio_unitario
+              FROM products WHERE sku = ${sku} AND tiene_stock = true LIMIT 1
+            `
+          }
         } else {
-          productoResult = await sql`
-            SELECT sku, marca, familia, medida, indice, efectivo_bsas_sin_iva as precio_unitario
-            FROM products WHERE sku = ${sku} AND tiene_stock = true LIMIT 1
-          `
+          if (isUUID) {
+            productoResult = await sql`
+              SELECT sku, marca, familia, medida, indice, efectivo_bsas_sin_iva as precio_unitario
+              FROM products WHERE id = ${sku} AND tiene_stock = true LIMIT 1
+            `
+          } else {
+            productoResult = await sql`
+              SELECT sku, marca, familia, medida, indice, efectivo_bsas_sin_iva as precio_unitario
+              FROM products WHERE sku = ${sku} AND tiene_stock = true LIMIT 1
+            `
+          }
         }
         
         if (productoResult.length === 0) {
-          console.error('[n8n-estado-v2] ❌ SKU no encontrado o sin stock:', sku)
+          console.error('[n8n-estado-v2] ❌ SKU/ID no encontrado o sin stock:', sku)
           return NextResponse.json({
             error: `Producto con SKU ${sku} no encontrado o sin stock`
           }, { status: 400 })
