@@ -80,17 +80,36 @@ export async function POST(request: NextRequest) {
       tiene_pedido: !!(items_pedido?.length)
     })
 
+    // Detectar región automáticamente desde el teléfono
+    // +54911... o +5411... = CABA (código de área 11)
+    // Cualquier otro = INTERIOR
+    const region = (telefono_whatsapp.startsWith('+54911') || telefono_whatsapp.startsWith('+5411')) 
+      ? 'CABA' 
+      : 'INTERIOR'
+    
+    console.log('[n8n-estado-v2] 📍 Región detectada:', region)
+
     // Obtener o crear lead
     const leadResult = await sql`
       SELECT get_or_create_lead(${telefono_whatsapp}) as lead_id
     `
     const lead_id = leadResult[0].lead_id
 
-    // Actualizar nombre si viene
+    // Actualizar región y nombre si viene
     if (nombre) {
       await sql`
         UPDATE leads
-        SET nombre_cliente = ${nombre}, updated_at = NOW()
+        SET 
+          nombre_cliente = ${nombre}, 
+          region = ${region},
+          updated_at = NOW()
+        WHERE id = ${lead_id}
+      `
+    } else {
+      // Solo actualizar región
+      await sql`
+        UPDATE leads
+        SET region = ${region}, updated_at = NOW()
         WHERE id = ${lead_id}
       `
     }

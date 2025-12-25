@@ -35,7 +35,10 @@ try {
     exit 1
 }
 
-Start-Sleep -Seconds 1
+Start-Sleep -Seconds 3
+Write-Host "`n⏸️  PAUSA - Revisá la base de datos antes de continuar..." -ForegroundColor Yellow
+Write-Host "   Presioná ENTER para continuar al siguiente paso" -ForegroundColor Gray
+Read-Host
 
 # ========================================
 # PASO 2: Cliente consulta PRIMERA medida
@@ -63,7 +66,9 @@ try {
     exit 1
 }
 
-Start-Sleep -Seconds 1
+Start-Sleep -Seconds 2
+Write-Host "`n⏸️  PAUSA - Primera consulta guardada. Presioná ENTER..." -ForegroundColor Yellow
+Read-Host
 
 # ========================================
 # PASO 3: Agente busca productos
@@ -91,7 +96,9 @@ try {
     exit 1
 }
 
-Start-Sleep -Seconds 1
+Start-Sleep -Seconds 2
+Write-Host "`n⏸️  PAUSA - Producto encontrado. Presioná ENTER..." -ForegroundColor Yellow
+Read-Host
 
 # ========================================
 # PASO 4: Cliente consulta SEGUNDA medida (otro producto)
@@ -117,7 +124,9 @@ try {
     exit 1
 }
 
-Start-Sleep -Seconds 1
+Start-Sleep -Seconds 2
+Write-Host "`n⏸️  PAUSA - Segunda consulta guardada. Presioná ENTER..." -ForegroundColor Yellow
+Read-Host
 
 # ========================================
 # PASO 5: Buscar segunda medida
@@ -143,7 +152,9 @@ try {
     exit 1
 }
 
-Start-Sleep -Seconds 1
+Start-Sleep -Seconds 2
+Write-Host "`n⏸️  PAUSA - Segundo producto encontrado. Presioná ENTER..." -ForegroundColor Yellow
+Read-Host
 
 # ========================================
 # PASO 6: Agente cotiza
@@ -164,7 +175,9 @@ try {
     exit 1
 }
 
-Start-Sleep -Seconds 1
+Start-Sleep -Seconds 2
+Write-Host "`n⏸️  PAUSA - Estado actualizado a cotizado. Presioná ENTER..." -ForegroundColor Yellow
+Read-Host
 
 # ========================================
 # PASO 7: Cliente confirma pedido MIXTO
@@ -197,7 +210,9 @@ try {
     exit 1
 }
 
-Start-Sleep -Seconds 1
+Start-Sleep -Seconds 2
+Write-Host "`n⏸️  PAUSA - Pedido creado! Presioná ENTER..." -ForegroundColor Yellow
+Read-Host
 
 # ========================================
 # PASO 8: Cliente pide factura A (ticket)
