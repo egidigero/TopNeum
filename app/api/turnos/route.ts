@@ -136,10 +136,10 @@ export async function POST(request: NextRequest) {
     // 🆕 Si viene lead_id, validar que no tenga otro turno activo
     if (lead_id) {
       const turnoExistente = await sql`
-        SELECT id, fecha, hora_inicio, estado_turno 
+        SELECT id, fecha, hora_inicio, estado 
         FROM turnos
         WHERE lead_id = ${lead_id}
-        AND estado_turno IN ('pendiente', 'confirmado')
+        AND estado IN ('pendiente', 'confirmado')
         LIMIT 1
       `
 
@@ -186,8 +186,7 @@ export async function POST(request: NextRequest) {
         origen,
         pedido_id,
         lead_id,
-        estado,
-        estado_turno
+        estado
       ) VALUES (
         ${nombre_cliente},
         ${telefono},
@@ -204,7 +203,6 @@ export async function POST(request: NextRequest) {
         ${origen},
         ${pedido_id || null},
         ${lead_id || null},
-        'pendiente',
         'pendiente'
       )
       RETURNING *

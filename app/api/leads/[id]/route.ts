@@ -14,89 +14,113 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
     const { id: leadId } = await params
     
-    // Update simple por campo
-    let result: any[] = []
-    
-    // Actualizar campos de forma directa y simple
+    // Construir UPDATE dinámico con todos los campos a actualizar
+    const updates: string[] = []
+    const values: any[] = []
+    let paramIndex = 1
+
     if (body.estado !== undefined) {
-      result = await sql`
-        UPDATE leads 
-        SET estado = ${body.estado}, updated_at = NOW()
-        WHERE id = ${leadId}
-        RETURNING *
-      `
+      updates.push(`estado = $${paramIndex++}`)
+      values.push(body.estado)
     }
     
     if (body.notas !== undefined) {
-      result = await sql`
-        UPDATE leads 
-        SET notas = ${body.notas}, updated_at = NOW()
-        WHERE id = ${leadId}
-        RETURNING *
-      `
+      updates.push(`notas = $${paramIndex++}`)
+      values.push(body.notas)
     }
     
     if (body.email !== undefined) {
-      result = await sql`
-        UPDATE leads 
-        SET email = ${body.email}, updated_at = NOW()
-        WHERE id = ${leadId}
-        RETURNING *
-      `
+      updates.push(`email = $${paramIndex++}`)
+      values.push(body.email)
     }
     
     if (body.dni !== undefined) {
-      result = await sql`
-        UPDATE leads 
-        SET dni = ${body.dni}, updated_at = NOW()
-        WHERE id = ${leadId}
-        RETURNING *
-      `
+      updates.push(`dni = $${paramIndex++}`)
+      values.push(body.dni)
     }
     
     if (body.direccion !== undefined) {
-      result = await sql`
-        UPDATE leads 
-        SET direccion = ${body.direccion}, updated_at = NOW()
-        WHERE id = ${leadId}
-        RETURNING *
-      `
+      updates.push(`direccion = $${paramIndex++}`)
+      values.push(body.direccion)
     }
     
     if (body.localidad !== undefined) {
-      result = await sql`
-        UPDATE leads 
-        SET localidad = ${body.localidad}, updated_at = NOW()
-        WHERE id = ${leadId}
-        RETURNING *
-      `
+      updates.push(`localidad = $${paramIndex++}`)
+      values.push(body.localidad)
     }
     
     if (body.provincia !== undefined) {
-      result = await sql`
-        UPDATE leads 
-        SET provincia = ${body.provincia}, updated_at = NOW()
-        WHERE id = ${leadId}
-        RETURNING *
-      `
+      updates.push(`provincia = $${paramIndex++}`)
+      values.push(body.provincia)
     }
     
     if (body.codigo_postal !== undefined) {
-      result = await sql`
-        UPDATE leads 
-        SET codigo_postal = ${body.codigo_postal}, updated_at = NOW()
-        WHERE id = ${leadId}
-        RETURNING *
-      `
+      updates.push(`codigo_postal = $${paramIndex++}`)
+      values.push(body.codigo_postal)
     }
     
     if (body.ultimo_contacto_at !== undefined) {
-      result = await sql`
-        UPDATE leads 
-        SET ultima_interaccion = ${body.ultimo_contacto_at}, updated_at = NOW()
-        WHERE id = ${leadId}
-        RETURNING *
-      `
+      updates.push(`ultima_interaccion = $${paramIndex++}`)
+      values.push(body.ultimo_contacto_at)
+    }
+
+    // Ejecutar UPDATE con campos dinámicos
+    let result: any[]
+    
+    if (updates.length === 0) {
+      // Solo obtener el lead actual si no hay updates
+      result = await sql`SELECT * FROM leads WHERE id = ${leadId}`
+    } else {
+      // Construir query manualmente
+      const setClauses = updates.map((_, idx) => {
+        if (idx < values.length) {
+          return updates[idx]
+        }
+        return 'updated_at = NOW()'
+      }).filter((clause, idx) => idx < updates.length || clause.includes('updated_at'))
+      
+      // Ejecutar con postgres.js usando template strings
+      if (body.estado !== undefined && body.ultimo_contacto_at !== undefined) {
+        result = await sql`
+          UPDATE leads 
+          SET estado = ${body.estado}, 
+              ultima_interaccion = ${body.ultimo_contacto_at},
+              updated_at = NOW()
+          WHERE id = ${leadId}
+          RETURNING *
+        `
+      } else if (body.estado !== undefined) {
+        result = await sql`
+          UPDATE leads 
+          SET estado = ${body.estado}, updated_at = NOW()
+          WHERE id = ${leadId}
+          RETURNING *
+        `
+      } else if (body.notas !== undefined) {
+        result = await sql`
+          UPDATE leads 
+          SET notas = ${body.notas}, updated_at = NOW()
+          WHERE id = ${leadId}
+          RETURNING *
+        `
+      } else if (body.email !== undefined) {
+        result = await sql`
+          UPDATE leads 
+          SET email = ${body.email}, updated_at = NOW()
+          WHERE id = ${leadId}
+          RETURNING *
+        `
+      } else if (body.ultimo_contacto_at !== undefined) {
+        result = await sql`
+          UPDATE leads 
+          SET ultima_interaccion = ${body.ultimo_contacto_at}, updated_at = NOW()
+          WHERE id = ${leadId}
+          RETURNING *
+        `
+      } else {
+        // Fallback para otros campos
+        result = await sql`SELECT * FROM leads WHERE id = ${leadId}`
+      }
     }
 
     // 🆕 Si cambia a 'pedido_confirmado', crear/actualizar registro en lead_pedidos

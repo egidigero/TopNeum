@@ -26,7 +26,7 @@ export async function GET(
         estado_pago,
         comprobante_url,
         fecha_pago,
-        created_at
+        created_at as fecha_pedido
       FROM lead_pedidos
       WHERE lead_id = ${id}
       ORDER BY created_at DESC
