@@ -74,6 +74,16 @@ export async function PATCH(
       return NextResponse.json({ error: "Pedido no encontrado" }, { status: 404 })
     }
 
+    // Si se confirma el pago, actualizar estado del lead a "pedido_confirmado"
+    if (estado_pago === 'pagado') {
+      console.log('[PATCH /api/leads/[id]/pagos] Actualizando lead a pedido_confirmado')
+      await sql`
+        UPDATE leads
+        SET estado = 'pedido_confirmado', updated_at = NOW()
+        WHERE id = ${id}
+      `
+    }
+
     return NextResponse.json({ pedido: result[0] })
   } catch (error: any) {
     console.error("[v0] Update pago error:", error)

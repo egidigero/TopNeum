@@ -112,6 +112,7 @@ export function LeadDetailPanel({ lead, users, currentUser, onClose, onUpdate, o
   }
 
   const handleChangeEstado = async (nuevoEstado: string) => {
+    console.log('[LeadDetailPanel] Cambiando estado a:', nuevoEstado)
     onUpdate({ estado: nuevoEstado, ultimo_contacto_at: new Date().toISOString() })
   }
 
@@ -494,7 +495,9 @@ export function LeadDetailPanel({ lead, users, currentUser, onClose, onUpdate, o
                                 const data = await res.json()
                                 console.log('Respuesta:', data)
                                 if (res.ok) {
-                                  window.location.reload()
+                                  alert('✅ Pago confirmado exitosamente')
+                                  // TODO: Actualizar estado en UI sin reload
+                                  // window.location.reload()
                                 } else {
                                   alert('Error: ' + (data.error || 'Error desconocido'))
                                 }
@@ -525,7 +528,9 @@ export function LeadDetailPanel({ lead, users, currentUser, onClose, onUpdate, o
                                 const data = await res.json()
                                 console.log('Respuesta:', data)
                                 if (res.ok) {
-                                  window.location.reload()
+                                  alert('✅ Pago cancelado')
+                                  // TODO: Actualizar estado en UI sin reload
+                                  // window.location.reload()
                                 } else {
                                   alert('Error: ' + (data.error || 'Error desconocido'))
                                 }

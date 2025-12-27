@@ -8,10 +8,13 @@ import { sql } from "@/lib/db"
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
+    console.log('[agendar-con-codigo] Body recibido:', JSON.stringify(body, null, 2))
+    
     const { codigo, fecha, hora_inicio, hora_fin, tipo, datos_envio } = body
 
     // Para tipo "envio", fecha/hora no son requeridas
     if (!codigo || !tipo) {
+      console.log('[agendar-con-codigo] Faltan datos: codigo o tipo')
       return NextResponse.json({ 
         error: 'Faltan datos requeridos' 
       }, { status: 400 })
@@ -19,6 +22,7 @@ export async function POST(request: NextRequest) {
 
     // Si no es envio, validar fecha y hora
     if (tipo !== "envio" && (!fecha || !hora_inicio || !hora_fin)) {
+      console.log('[agendar-con-codigo] Faltan datos de fecha/hora para tipo', tipo)
       return NextResponse.json({ 
         error: 'Faltan datos de fecha y horario' 
       }, { status: 400 })
@@ -26,6 +30,7 @@ export async function POST(request: NextRequest) {
 
     // Normalizar código
     const codigoNormalizado = codigo.trim().toUpperCase()
+    console.log('[agendar-con-codigo] Buscando código:', codigoNormalizado)
 
     // Buscar lead por código
     const leadResult = await sql`
@@ -41,12 +46,14 @@ export async function POST(request: NextRequest) {
     `
 
     if (leadResult.length === 0) {
+      console.log('[agendar-con-codigo] Código no encontrado:', codigoNormalizado)
       return NextResponse.json({ 
         error: 'Código no válido' 
       }, { status: 404 })
     }
 
     const lead = leadResult[0]
+    console.log('[agendar-con-codigo] Lead encontrado:', lead.id, lead.nombre_cliente)
 
     // Obtener datos del vehículo
     const consultaResult = await sql`
@@ -106,6 +113,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Crear turno (envío o colocación/retiro)
+    console.log('[agendar-con-codigo] Insertando turno tipo:', tipo)
+    
     const turnoResult = await sql`
       INSERT INTO turnos (
         lead_id,
@@ -143,14 +152,18 @@ export async function POST(request: NextRequest) {
     `
 
     const turno = turnoResult[0]
+    console.log('[agendar-con-codigo] Turno creado:', turno.id)
 
     // Actualizar estado del lead
+    console.log('[agendar-con-codigo] Actualizando estado del lead a:', tipo === "envio" ? 'pedido_confirmado' : 'turno_agendado')
     await sql`
       UPDATE leads
       SET estado = ${tipo === "envio" ? 'pedido_confirmado' : 'turno_agendado'}
       WHERE id = ${lead.id}
     `
 
+    console.log('[agendar-con-codigo] Éxito! Turno agendado')
+    
     return NextResponse.json({
       success: true,
       turno: {
