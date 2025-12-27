@@ -8,120 +8,120 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
     const body = await request.json()
     
+    console.log('[PATCH /api/leads/[id]] Body:', body)
+    
     if (Object.keys(body).length === 0) {
       return NextResponse.json({ error: "No updates provided" }, { status: 400 })
     }
 
     const { id: leadId } = await params
     
-    // Construir UPDATE dinámico con todos los campos a actualizar
-    const updates: string[] = []
-    const values: any[] = []
-    let paramIndex = 1
+    console.log('[PATCH /api/leads/[id]] Lead ID:', leadId)
 
-    if (body.estado !== undefined) {
-      updates.push(`estado = $${paramIndex++}`)
-      values.push(body.estado)
-    }
-    
-    if (body.notas !== undefined) {
-      updates.push(`notas = $${paramIndex++}`)
-      values.push(body.notas)
-    }
-    
-    if (body.email !== undefined) {
-      updates.push(`email = $${paramIndex++}`)
-      values.push(body.email)
-    }
-    
-    if (body.dni !== undefined) {
-      updates.push(`dni = $${paramIndex++}`)
-      values.push(body.dni)
-    }
-    
-    if (body.direccion !== undefined) {
-      updates.push(`direccion = $${paramIndex++}`)
-      values.push(body.direccion)
-    }
-    
-    if (body.localidad !== undefined) {
-      updates.push(`localidad = $${paramIndex++}`)
-      values.push(body.localidad)
-    }
-    
-    if (body.provincia !== undefined) {
-      updates.push(`provincia = $${paramIndex++}`)
-      values.push(body.provincia)
-    }
-    
-    if (body.codigo_postal !== undefined) {
-      updates.push(`codigo_postal = $${paramIndex++}`)
-      values.push(body.codigo_postal)
-    }
-    
-    if (body.ultimo_contacto_at !== undefined) {
-      updates.push(`ultima_interaccion = $${paramIndex++}`)
-      values.push(body.ultimo_contacto_at)
-    }
-
-    // Ejecutar UPDATE con campos dinámicos
+    // Ejecutar UPDATE según los campos recibidos
     let result: any[]
     
-    if (updates.length === 0) {
-      // Solo obtener el lead actual si no hay updates
-      result = await sql`SELECT * FROM leads WHERE id = ${leadId}`
-    } else {
-      // Construir query manualmente
-      const setClauses = updates.map((_, idx) => {
-        if (idx < values.length) {
-          return updates[idx]
-        }
-        return 'updated_at = NOW()'
-      }).filter((clause, idx) => idx < updates.length || clause.includes('updated_at'))
-      
-      // Ejecutar con postgres.js usando template strings
-      if (body.estado !== undefined && body.ultimo_contacto_at !== undefined) {
-        result = await sql`
-          UPDATE leads 
-          SET estado = ${body.estado}, 
-              ultima_interaccion = ${body.ultimo_contacto_at},
-              updated_at = NOW()
-          WHERE id = ${leadId}
-          RETURNING *
-        `
-      } else if (body.estado !== undefined) {
-        result = await sql`
-          UPDATE leads 
-          SET estado = ${body.estado}, updated_at = NOW()
-          WHERE id = ${leadId}
-          RETURNING *
-        `
-      } else if (body.notas !== undefined) {
-        result = await sql`
-          UPDATE leads 
-          SET notas = ${body.notas}, updated_at = NOW()
-          WHERE id = ${leadId}
-          RETURNING *
-        `
-      } else if (body.email !== undefined) {
-        result = await sql`
-          UPDATE leads 
-          SET email = ${body.email}, updated_at = NOW()
-          WHERE id = ${leadId}
-          RETURNING *
-        `
-      } else if (body.ultimo_contacto_at !== undefined) {
-        result = await sql`
-          UPDATE leads 
-          SET ultima_interaccion = ${body.ultimo_contacto_at}, updated_at = NOW()
-          WHERE id = ${leadId}
-          RETURNING *
-        `
-      } else {
-        // Fallback para otros campos
-        result = await sql`SELECT * FROM leads WHERE id = ${leadId}`
-      }
+    // Caso más común: actualizar estado con timestamp
+    if (body.estado !== undefined && body.ultimo_contacto_at !== undefined) {
+      console.log('[PATCH] Actualizando estado + timestamp')
+      result = await sql`
+        UPDATE leads 
+        SET estado = ${body.estado}, 
+            ultima_interaccion = ${body.ultimo_contacto_at},
+            updated_at = NOW()
+        WHERE id = ${leadId}
+        RETURNING *
+      `
+    } 
+    // Solo estado
+    else if (body.estado !== undefined) {
+      console.log('[PATCH] Actualizando solo estado')
+      result = await sql`
+        UPDATE leads 
+        SET estado = ${body.estado}, updated_at = NOW()
+        WHERE id = ${leadId}
+        RETURNING *
+      `
+    } 
+    // Solo notas
+    else if (body.notas !== undefined) {
+      console.log('[PATCH] Actualizando solo notas')
+      result = await sql`
+        UPDATE leads 
+        SET notas = ${body.notas}, updated_at = NOW()
+        WHERE id = ${leadId}
+        RETURNING *
+      `
+    } 
+    // Email
+    else if (body.email !== undefined) {
+      result = await sql`
+        UPDATE leads 
+        SET email = ${body.email}, updated_at = NOW()
+        WHERE id = ${leadId}
+        RETURNING *
+      `
     }
+    // DNI
+    else if (body.dni !== undefined) {
+      result = await sql`
+        UPDATE leads 
+        SET dni = ${body.dni}, updated_at = NOW()
+        WHERE id = ${leadId}
+        RETURNING *
+      `
+    }
+    // Dirección
+    else if (body.direccion !== undefined) {
+      result = await sql`
+        UPDATE leads 
+        SET direccion = ${body.direccion}, updated_at = NOW()
+        WHERE id = ${leadId}
+        RETURNING *
+      `
+    }
+    // Localidad
+    else if (body.localidad !== undefined) {
+      result = await sql`
+        UPDATE leads 
+        SET localidad = ${body.localidad}, updated_at = NOW()
+        WHERE id = ${leadId}
+        RETURNING *
+      `
+    }
+    // Provincia
+    else if (body.provincia !== undefined) {
+      result = await sql`
+        UPDATE leads 
+        SET provincia = ${body.provincia}, updated_at = NOW()
+        WHERE id = ${leadId}
+        RETURNING *
+      `
+    }
+    // Código postal
+    else if (body.codigo_postal !== undefined) {
+      result = await sql`
+        UPDATE leads 
+        SET codigo_postal = ${body.codigo_postal}, updated_at = NOW()
+        WHERE id = ${leadId}
+        RETURNING *
+      `
+    }
+    // Timestamp solo
+    else if (body.ultimo_contacto_at !== undefined) {
+      result = await sql`
+        UPDATE leads 
+        SET ultima_interaccion = ${body.ultimo_contacto_at}, updated_at = NOW()
+        WHERE id = ${leadId}
+        RETURNING *
+      `
+    }
+    // Fallback
+    else {
+      result = await sql`SELECT * FROM leads WHERE id = ${leadId}`
+    }
+
+    console.log('[PATCH] Resultado:', result.length > 0 ? 'OK' : 'NO ENCONTRADO')
 
     // 🆕 Si cambia a 'pedido_confirmado', crear/actualizar registro en lead_pedidos
     if (body.estado === 'pedido_confirmado') {

@@ -107,6 +107,9 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
+    
+    console.log('[POST /api/turnos] Body:', body)
+    
     const {
       nombre_cliente,
       telefono,
@@ -127,6 +130,7 @@ export async function POST(request: NextRequest) {
 
     // Validar campos requeridos
     if (!nombre_cliente || !telefono || !tipo || !fecha || !hora_inicio || !hora_fin) {
+      console.log('[POST /api/turnos] Faltan campos requeridos')
       return NextResponse.json(
         { error: "Faltan campos requeridos: nombre_cliente, telefono, tipo, fecha, hora_inicio, hora_fin" },
         { status: 400 }
@@ -145,6 +149,7 @@ export async function POST(request: NextRequest) {
 
       if (turnoExistente.length > 0) {
         const turno = turnoExistente[0]
+        console.log('[POST /api/turnos] Lead ya tiene turno:', turno.id)
         return NextResponse.json({ 
           error: `Este cliente ya tiene un turno agendado para el ${new Date(turno.fecha + 'T00:00:00').toLocaleDateString('es-AR')} a las ${turno.hora_inicio.substring(0, 5)}.`,
           turno_existente: turno
@@ -162,12 +167,15 @@ export async function POST(request: NextRequest) {
     `
 
     if (existente.length > 0) {
+      console.log('[POST /api/turnos] Horario ocupado')
       return NextResponse.json(
         { error: "Este horario ya está ocupado" },
         { status: 409 }
       )
     }
 
+    console.log('[POST /api/turnos] Insertando turno...')
+    
     // Insertar turno
     const turno = await sql`
       INSERT INTO turnos (
@@ -207,6 +215,8 @@ export async function POST(request: NextRequest) {
       )
       RETURNING *
     `
+
+    console.log('[POST /api/turnos] Turno creado:', turno[0].id)
 
     return NextResponse.json(turno[0], { status: 201 })
   } catch (error: any) {

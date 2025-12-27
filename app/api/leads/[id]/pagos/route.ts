@@ -50,6 +50,9 @@ export async function PATCH(
     const body = await request.json()
     const { pedido_id, estado_pago, fecha_pago } = body
 
+    console.log('[PATCH /api/leads/[id]/pagos] Lead ID:', id)
+    console.log('[PATCH /api/leads/[id]/pagos] Body:', body)
+
     if (!pedido_id) {
       return NextResponse.json({ error: "pedido_id es requerido" }, { status: 400 })
     }
@@ -64,6 +67,8 @@ export async function PATCH(
       AND lead_id = ${id}
       RETURNING *
     `
+
+    console.log('[PATCH /api/leads/[id]/pagos] Resultado:', result.length > 0 ? 'OK' : 'NO ENCONTRADO')
 
     if (result.length === 0) {
       return NextResponse.json({ error: "Pedido no encontrado" }, { status: 404 })
