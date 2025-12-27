@@ -136,7 +136,7 @@ export async function POST(request: NextRequest) {
         ${consulta.tipo_vehiculo || null},
         ${pedido.cantidad_total || 4},
         ${tipo === "envio" ? 'pendiente' : 'confirmado'},
-        'web_cliente',
+        'web',
         ${tipo === "envio" ? JSON.stringify(datos_envio) : null}
       )
       RETURNING *

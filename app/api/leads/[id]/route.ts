@@ -122,6 +122,12 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     }
 
     console.log('[PATCH] Resultado:', result.length > 0 ? 'OK' : 'NO ENCONTRADO')
+    
+    if (result.length === 0) {
+      return NextResponse.json({ error: "Lead no encontrado" }, { status: 404 })
+    }
+    
+    console.log('[PATCH] Lead actualizado:', result[0].id, 'Estado:', result[0].estado)
 
     // 🆕 Si cambia a 'pedido_confirmado', crear/actualizar registro en lead_pedidos
     if (body.estado === 'pedido_confirmado') {
@@ -181,8 +187,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
         await sql`
           UPDATE lead_pedidos
           SET 
-            estado_pago = 'confirmado', 
-            updated_at = NOW(),
+            estado_pago = 'pagado', 
             fecha_pago = COALESCE(fecha_pago, NOW())
           WHERE lead_id = ${leadId}
         `

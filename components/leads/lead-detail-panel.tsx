@@ -466,14 +466,14 @@ export function LeadDetailPanel({ lead, users, currentUser, onClose, onUpdate, o
                         </div>
                       )}
                       <div className="flex items-center justify-between mt-2 pt-2 border-t">
-                        <Badge variant={pago.estado_pago === 'confirmado' ? 'default' : 'secondary'} className="text-xs">
+                        <Badge variant={pago.estado_pago === 'pagado' ? 'default' : 'secondary'} className="text-xs">
                           {pago.estado_pago}
                         </Badge>
                         <span className="text-xs text-slate-500">
                           {new Date(pago.fecha_pedido).toLocaleDateString('es-AR')}
                         </span>
                       </div>
-                      {pago.estado_pago !== 'confirmado' && (
+                      {pago.estado_pago !== 'pagado' && (
                         <div className="flex gap-2 mt-2">
                           <Button
                             size="sm"
@@ -487,7 +487,7 @@ export function LeadDetailPanel({ lead, users, currentUser, onClose, onUpdate, o
                                   headers: { 'Content-Type': 'application/json' },
                                   body: JSON.stringify({
                                     pedido_id: pago.id,
-                                    estado_pago: 'confirmado',
+                                    estado_pago: 'pagado',
                                     fecha_pago: new Date().toISOString()
                                   })
                                 })
@@ -504,7 +504,7 @@ export function LeadDetailPanel({ lead, users, currentUser, onClose, onUpdate, o
                               }
                             }}
                           >
-                            ✓ Confirmar
+                            ✓ Confirmar Pago
                           </Button>
                           <Button
                             size="sm"
@@ -512,13 +512,13 @@ export function LeadDetailPanel({ lead, users, currentUser, onClose, onUpdate, o
                             className="flex-1"
                             onClick={async () => {
                               try {
-                                console.log('Rechazando pago:', pago.id)
+                                console.log('Cancelando pago:', pago.id)
                                 const res = await fetch(`/api/leads/${lead.id}/pagos`, {
                                   method: 'PATCH',
                                   headers: { 'Content-Type': 'application/json' },
                                   body: JSON.stringify({
                                     pedido_id: pago.id,
-                                    estado_pago: 'rechazado',
+                                    estado_pago: 'cancelado',
                                     fecha_pago: new Date().toISOString()
                                   })
                                 })
@@ -530,12 +530,12 @@ export function LeadDetailPanel({ lead, users, currentUser, onClose, onUpdate, o
                                   alert('Error: ' + (data.error || 'Error desconocido'))
                                 }
                               } catch (error) {
-                                console.error('Error rechazando pago:', error)
-                                alert('Error al rechazar pago')
+                                console.error('Error cancelando pago:', error)
+                                alert('Error al cancelar pago')
                               }
                             }}
                           >
-                            ✗ Rechazar
+                            ✗ Cancelar
                           </Button>
                         </div>
                       )}
