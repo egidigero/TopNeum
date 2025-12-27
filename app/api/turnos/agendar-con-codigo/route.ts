@@ -217,9 +217,13 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error: any) {
-    console.error('[agendar-con-codigo] Error:', error)
+    console.error('[agendar-con-codigo] Error completo:', error)
+    console.error('[agendar-con-codigo] Error stack:', error.stack)
+    console.error('[agendar-con-codigo] Error message:', error.message)
+    console.error('[agendar-con-codigo] Error code:', error.code)
     return NextResponse.json({ 
-      error: error.message || 'Error al agendar turno' 
+      error: error.message || 'Error al agendar turno',
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
     }, { status: 500 })
   }
 }
