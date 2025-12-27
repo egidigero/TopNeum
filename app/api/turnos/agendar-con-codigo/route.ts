@@ -115,41 +115,81 @@ export async function POST(request: NextRequest) {
     // Crear turno (envío o colocación/retiro)
     console.log('[agendar-con-codigo] Insertando turno tipo:', tipo)
     
-    const turnoResult = await sql`
-      INSERT INTO turnos (
-        lead_id,
-        nombre_cliente,
-        telefono,
-        email,
-        tipo,
-        fecha,
-        hora_inicio,
-        hora_fin,
-        marca_vehiculo,
-        modelo_vehiculo,
-        cantidad_neumaticos,
-        estado,
-        origen,
-        datos_envio
-      )
-      VALUES (
-        ${lead.id},
-        ${lead.nombre_cliente || 'Cliente'},
-        ${lead.telefono_whatsapp},
-        ${lead.email || null},
-        ${tipo},
-        ${tipo === "envio" ? null : fecha},
-        ${tipo === "envio" ? null : hora_inicio},
-        ${tipo === "envio" ? null : hora_fin},
-        ${consulta.tipo_vehiculo || null},
-        ${consulta.tipo_vehiculo || null},
-        ${pedido.cantidad_total || 4},
-        ${tipo === "envio" ? 'pendiente' : 'confirmado'},
-        'web',
-        ${tipo === "envio" ? JSON.stringify(datos_envio) : null}
-      )
-      RETURNING *
-    `
+    let turnoResult: any[]
+    
+    if (tipo === "envio") {
+      // Para envío, usar fecha dummy ya que las columnas son NOT NULL
+      turnoResult = await sql`
+        INSERT INTO turnos (
+          lead_id,
+          nombre_cliente,
+          telefono,
+          email,
+          tipo,
+          fecha,
+          hora_inicio,
+          hora_fin,
+          marca_vehiculo,
+          modelo_vehiculo,
+          cantidad_neumaticos,
+          estado,
+          origen,
+          datos_envio
+        )
+        VALUES (
+          ${lead.id},
+          ${lead.nombre_cliente || 'Cliente'},
+          ${lead.telefono_whatsapp},
+          ${lead.email || null},
+          'envio',
+          CURRENT_DATE,
+          '00:00:00',
+          '23:59:59',
+          ${consulta.tipo_vehiculo || null},
+          ${consulta.tipo_vehiculo || null},
+          ${pedido.cantidad_total || 4},
+          'pendiente',
+          'web',
+          ${JSON.stringify(datos_envio)}
+        )
+        RETURNING *
+      `
+    } else {
+      // Para colocación/retiro, usar datos reales
+      turnoResult = await sql`
+        INSERT INTO turnos (
+          lead_id,
+          nombre_cliente,
+          telefono,
+          email,
+          tipo,
+          fecha,
+          hora_inicio,
+          hora_fin,
+          marca_vehiculo,
+          modelo_vehiculo,
+          cantidad_neumaticos,
+          estado,
+          origen
+        )
+        VALUES (
+          ${lead.id},
+          ${lead.nombre_cliente || 'Cliente'},
+          ${lead.telefono_whatsapp},
+          ${lead.email || null},
+          ${tipo},
+          ${fecha},
+          ${hora_inicio},
+          ${hora_fin},
+          ${consulta.tipo_vehiculo || null},
+          ${consulta.tipo_vehiculo || null},
+          ${pedido.cantidad_total || 4},
+          'confirmado',
+          'web'
+        )
+        RETURNING *
+      `
+    }
 
     const turno = turnoResult[0]
     console.log('[agendar-con-codigo] Turno creado:', turno.id)

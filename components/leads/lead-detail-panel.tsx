@@ -113,7 +113,12 @@ export function LeadDetailPanel({ lead, users, currentUser, onClose, onUpdate, o
 
   const handleChangeEstado = async (nuevoEstado: string) => {
     console.log('[LeadDetailPanel] Cambiando estado a:', nuevoEstado)
-    onUpdate({ estado: nuevoEstado, ultimo_contacto_at: new Date().toISOString() })
+    try {
+      await onUpdate({ estado: nuevoEstado, ultimo_contacto_at: new Date().toISOString() })
+      console.log('[LeadDetailPanel] Estado actualizado')
+    } catch (error) {
+      console.error('[LeadDetailPanel] Error:', error)
+    }
   }
 
   // Debug: verificar si llegan los pedidos
@@ -396,27 +401,27 @@ export function LeadDetailPanel({ lead, users, currentUser, onClose, onUpdate, o
             <div className="space-y-2">
               <label className="text-sm font-bold text-slate-700">Cambiar estado</label>
               <div className="grid grid-cols-2 gap-2">
-                <Button size="sm" variant="outline" onClick={() => handleChangeEstado("en_conversacion")}
+                <Button type="button" size="sm" variant="outline" onClick={() => handleChangeEstado("en_conversacion")}
                   className="border-2 border-blue-300 text-blue-700 bg-blue-50 hover:bg-blue-100 text-xs font-medium py-2">
                   En Conversación
                 </Button>
-                <Button size="sm" variant="outline" onClick={() => handleChangeEstado("cotizado")}
+                <Button type="button" size="sm" variant="outline" onClick={() => handleChangeEstado("cotizado")}
                   className="border-2 border-purple-300 text-purple-700 bg-purple-50 hover:bg-purple-100 text-xs font-medium py-2">
                   Cotizado
                 </Button>
-                <Button size="sm" variant="outline" onClick={() => handleChangeEstado("esperando_pago")}
+                <Button type="button" size="sm" variant="outline" onClick={() => handleChangeEstado("esperando_pago")}
                   className="border-2 border-amber-300 text-amber-700 bg-amber-50 hover:bg-amber-100 text-xs font-medium py-2">
                   Esperando Pago
                 </Button>
-                <Button size="sm" variant="outline" onClick={() => handleChangeEstado("pago_informado")}
+                <Button type="button" size="sm" variant="outline" onClick={() => handleChangeEstado("pago_informado")}
                   className="border-2 border-cyan-300 text-cyan-700 bg-cyan-50 hover:bg-cyan-100 text-xs font-medium py-2">
                   Pago Informado
                 </Button>
-                <Button size="sm" variant="outline" onClick={() => handleChangeEstado("pedido_confirmado")}
+                <Button type="button" size="sm" variant="outline" onClick={() => handleChangeEstado("pedido_confirmado")}
                   className="border-2 border-emerald-400 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 text-xs font-medium py-2">
                   Confirmado
                 </Button>
-                <Button size="sm" variant="outline" onClick={() => handleChangeEstado("perdido")}
+                <Button type="button" size="sm" variant="outline" onClick={() => handleChangeEstado("perdido")}
                   className="border-2 border-red-300 text-red-700 bg-red-50 hover:bg-red-100 text-xs font-medium py-2">
                   Perdido
                 </Button>
