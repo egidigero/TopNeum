@@ -121,8 +121,7 @@ export async function POST(request: NextRequest) {
         cantidad_neumaticos,
         estado,
         origen,
-        datos_envio,
-        estado_turno
+        datos_envio
       )
       VALUES (
         ${lead.id},
@@ -138,8 +137,7 @@ export async function POST(request: NextRequest) {
         ${pedido.cantidad_total || 4},
         ${tipo === "envio" ? 'pendiente' : 'confirmado'},
         'web_cliente',
-        ${tipo === "envio" ? JSON.stringify(datos_envio) : null},
-        ${tipo === "envio" ? 'pendiente' : 'confirmado'}
+        ${tipo === "envio" ? JSON.stringify(datos_envio) : null}
       )
       RETURNING *
     `

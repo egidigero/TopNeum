@@ -481,6 +481,7 @@ export function LeadDetailPanel({ lead, users, currentUser, onClose, onUpdate, o
                             className="flex-1 bg-emerald-600 hover:bg-emerald-700"
                             onClick={async () => {
                               try {
+                                console.log('Confirmando pago:', pago.id)
                                 const res = await fetch(`/api/leads/${lead.id}/pagos`, {
                                   method: 'PATCH',
                                   headers: { 'Content-Type': 'application/json' },
@@ -490,11 +491,16 @@ export function LeadDetailPanel({ lead, users, currentUser, onClose, onUpdate, o
                                     fecha_pago: new Date().toISOString()
                                   })
                                 })
+                                const data = await res.json()
+                                console.log('Respuesta:', data)
                                 if (res.ok) {
                                   window.location.reload()
+                                } else {
+                                  alert('Error: ' + (data.error || 'Error desconocido'))
                                 }
                               } catch (error) {
                                 console.error('Error confirmando pago:', error)
+                                alert('Error al confirmar pago')
                               }
                             }}
                           >
@@ -506,6 +512,7 @@ export function LeadDetailPanel({ lead, users, currentUser, onClose, onUpdate, o
                             className="flex-1"
                             onClick={async () => {
                               try {
+                                console.log('Rechazando pago:', pago.id)
                                 const res = await fetch(`/api/leads/${lead.id}/pagos`, {
                                   method: 'PATCH',
                                   headers: { 'Content-Type': 'application/json' },
@@ -515,11 +522,16 @@ export function LeadDetailPanel({ lead, users, currentUser, onClose, onUpdate, o
                                     fecha_pago: new Date().toISOString()
                                   })
                                 })
+                                const data = await res.json()
+                                console.log('Respuesta:', data)
                                 if (res.ok) {
                                   window.location.reload()
+                                } else {
+                                  alert('Error: ' + (data.error || 'Error desconocido'))
                                 }
                               } catch (error) {
                                 console.error('Error rechazando pago:', error)
+                                alert('Error al rechazar pago')
                               }
                             }}
                           >

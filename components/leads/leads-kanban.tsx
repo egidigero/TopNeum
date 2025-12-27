@@ -49,21 +49,29 @@ export function LeadsKanban({ leads: initialLeads, users, currentUser }: LeadsKa
 
   async function handleUpdateLead(leadId: string, updates: Partial<Lead>) {
     try {
+      console.log('[Kanban] Actualizando lead:', leadId, updates)
       const res = await fetch(`/api/leads/${leadId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(updates),
       })
 
+      const data = await res.json()
+      console.log('[Kanban] Respuesta:', data)
+
       if (res.ok) {
-        const { lead: updatedLead } = await res.json()
+        const { lead: updatedLead } = data
         setLeads((prev) => prev.map((l) => (l.id === leadId ? { ...l, ...updatedLead } : l)))
         if (selectedLead?.id === leadId) {
           setSelectedLead((prev) => (prev ? { ...prev, ...updatedLead } : null))
         }
+      } else {
+        console.error('[Kanban] Error en respuesta:', data.error)
+        alert('Error al actualizar: ' + (data.error || 'Error desconocido'))
       }
     } catch (error) {
       console.error("[v0] Update lead error:", error)
+      alert('Error al actualizar el lead')
     }
   }
 
