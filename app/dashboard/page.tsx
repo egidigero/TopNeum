@@ -15,7 +15,7 @@ export default async function DashboardPage() {
   const stats = await sql`
     SELECT 
       (SELECT COUNT(*) FROM products WHERE tiene_stock = true) as productos_activos,
-      (SELECT COUNT(*) FROM leads WHERE estado NOT IN ('pedido_confirmado', 'perdido')) as leads_activos,
+      (SELECT COUNT(*) FROM leads WHERE estado NOT IN ('perdido')) as leads_activos,
       (SELECT COUNT(*) FROM leads WHERE estado = 'pedido_confirmado') as pedidos_confirmados,
       (SELECT COUNT(*) FROM lead_pedidos WHERE estado_pago IN ('pendiente', 'sena_recibida')) as pagos_pendientes,
       (SELECT COUNT(*) FROM turnos WHERE fecha >= CURRENT_DATE) as turnos_proximos,
@@ -80,7 +80,7 @@ export default async function DashboardPage() {
         ) p
       ) as ultimo_pedido
     FROM leads l
-    WHERE l.estado NOT IN ('pedido_confirmado', 'perdido')
+    WHERE l.estado NOT IN ('perdido')
     ORDER BY l.created_at DESC
   `
 

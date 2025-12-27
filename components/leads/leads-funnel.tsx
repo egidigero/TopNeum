@@ -48,6 +48,9 @@ export function LeadsFunnel({ leads }: LeadsFunnelProps) {
     ["pago_informado", "pedido_confirmado"].includes(l.estado)
   ).length
 
+  // Pedidos confirmados (conversión final)
+  const pedidoConfirmado = leads.filter(l => l.estado === "pedido_confirmado").length
+
   const stages: FunnelStage[] = [
     {
       name: "total",
@@ -92,6 +95,15 @@ export function LeadsFunnel({ leads }: LeadsFunnelProps) {
       count: pagoConfirmado,
       percentage: total > 0 ? (pagoConfirmado / total) * 100 : 0,
       conversionRate: esperandoPago > 0 ? (pagoConfirmado / esperandoPago) * 100 : 0,
+    },
+    {
+      name: "pedido_confirmado",
+      label: "🎉 Pedido Confirmado",
+      color: "text-emerald-600",
+      bgColor: "bg-emerald-100",
+      count: pedidoConfirmado,
+      percentage: total > 0 ? (pedidoConfirmado / total) * 100 : 0,
+      conversionRate: pagoConfirmado > 0 ? (pedidoConfirmado / pagoConfirmado) * 100 : 0,
     },
   ]
 

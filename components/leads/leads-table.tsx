@@ -41,18 +41,43 @@ export function LeadsTable({ leads, users = [], currentUser }: LeadsTableProps) 
   const [sortBy, setSortBy] = useState<SortField>("fecha")
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc")
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null)
+  const [localLeads, setLocalLeads] = useState<Lead[]>(leads)
 
   const handleLeadUpdate = async (updates: any) => {
-    // Recargar la página para obtener datos actualizados
-    window.location.reload()
+    if (!selectedLead) return
+    
+    try {
+      console.log('[LeadsTable] Actualizando lead:', selectedLead.id, updates)
+      const res = await fetch(`/api/leads/${selectedLead.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updates),
+      })
+
+      const data = await res.json()
+      console.log('[LeadsTable] Respuesta:', data)
+
+      if (res.ok) {
+        const { lead: updatedLead } = data
+        setLocalLeads((prev) => prev.map((l) => (l.id === selectedLead.id ? { ...l, ...updatedLead } : l)))
+        setSelectedLead((prev) => (prev ? { ...prev, ...updatedLead } : null))
+      } else {
+        console.error('[LeadsTable] Error en respuesta:', data.error)
+        alert('Error al actualizar: ' + (data.error || 'Error desconocido'))
+      }
+    } catch (error) {
+      console.error("[LeadsTable] Update lead error:", error)
+      alert('Error al actualizar el lead')
+    }
   }
 
   const handleLeadDelete = async () => {
+    if (!selectedLead) return
+    setLocalLeads((prev) => prev.filter((l) => l.id !== selectedLead.id))
     setSelectedLead(null)
-    window.location.reload()
   }
 
-  const sortedLeads = [...leads].sort((a, b) => {
+  const sortedLeads = [...localLeads].sort((a, b) => {
     let compareValue = 0
     
     if (sortBy === "fecha") {

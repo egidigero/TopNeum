@@ -24,6 +24,7 @@ interface PedidoDetailPanelProps {
     notas: string | null
     // Datos del pedido
     productos: any
+    cotizaciones: any[]
     forma_pago: string
     total: number
     estado_pago: string
@@ -271,6 +272,59 @@ export function PedidoDetailPanel({ pedido, onClose, onUpdate }: PedidoDetailPan
               </Card>
             </div>
 
+            {/* Cotizaciones - Full width */}
+            {pedido.cotizaciones && pedido.cotizaciones.length > 0 && (
+              <Card className="bg-white border-2 border-blue-200 shadow-sm mb-6">
+                <CardHeader className="bg-gradient-to-r from-blue-50 to-cyan-50">
+                  <div className="flex items-center gap-2">
+                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                      <span className="text-blue-600 font-bold text-lg">💰</span>
+                    </div>
+                    <CardTitle className="text-lg text-slate-800">Productos Cotizados</CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-4">
+                  {pedido.cotizaciones.map((cot: any, idx: number) => (
+                    <div key={idx} className="mb-4 last:mb-0">
+                      <div className="text-xs text-slate-500 mb-2">
+                        Cotización #{idx + 1} - {new Date(cot.created_at).toLocaleString('es-AR')}
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {cot.productos_mostrados?.map((prod: any, prodIdx: number) => (
+                          <div key={prodIdx} className="bg-gradient-to-br from-blue-50 to-cyan-50 border-2 border-blue-200 rounded-xl p-4">
+                            <div className="flex justify-between items-start gap-3">
+                              <div className="flex-1">
+                                <div className="font-bold text-slate-900 text-base">
+                                  {prod.marca} {prod.modelo}
+                                </div>
+                                <div className="text-blue-700 font-semibold mt-1">{prod.medida}</div>
+                                {prod.descripcion && (
+                                  <div className="text-xs text-slate-600 mt-2 leading-relaxed">{prod.descripcion}</div>
+                                )}
+                              </div>
+                              {prod.precio && (
+                                <div className="text-right flex-shrink-0">
+                                  <div className="text-lg font-bold text-blue-700">{formatPrice(prod.precio)}</div>
+                                  <div className="text-xs text-slate-500">por unidad</div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      {cot.precio_total_contado && (
+                        <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg flex justify-between items-center">
+                          <span className="text-slate-700 font-medium">Total Contado:</span>
+                          <span className="text-green-700 font-bold text-xl">{formatPrice(cot.precio_total_contado)}</span>
+                        </div>
+                      )}
+                      {idx < pedido.cotizaciones.length - 1 && <hr className="my-4 border-blue-200" />}
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            )}
+
             {/* Productos - Full width */}
             <Card className="bg-white border-2 border-purple-200 shadow-sm mb-6">
               <CardHeader className="bg-gradient-to-r from-purple-50 to-pink-50">
@@ -278,7 +332,7 @@ export function PedidoDetailPanel({ pedido, onClose, onUpdate }: PedidoDetailPan
                   <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
                     <span className="text-purple-600 font-bold text-lg">🛞</span>
                   </div>
-                  <CardTitle className="text-lg text-slate-800">Productos Cotizados</CardTitle>
+                  <CardTitle className="text-lg text-slate-800">Pedido Final</CardTitle>
                 </div>
               </CardHeader>
               <CardContent className="pt-4">
