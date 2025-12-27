@@ -113,17 +113,12 @@ export function LeadDetailPanel({ lead, users, currentUser, onClose, onUpdate, o
 
   const handleChangeEstado = async (nuevoEstado: string) => {
     console.log('[LeadDetailPanel] Cambiando estado a:', nuevoEstado)
-    console.log('[LeadDetailPanel] onUpdate function:', typeof onUpdate)
-    
-    // TEMPORAL: Comentado para debugging
-    alert(`Estado que se va a cambiar: ${nuevoEstado}\n\nSi la página se recarga después de este alert, el problema NO es onUpdate.`)
-    return // TEMPORAL - NO HACER NADA MÁS
-    
     try {
       await onUpdate({ estado: nuevoEstado, ultimo_contacto_at: new Date().toISOString() })
-      console.log('[LeadDetailPanel] Estado actualizado')
+      console.log('[LeadDetailPanel] Estado actualizado correctamente')
     } catch (error) {
-      console.error('[LeadDetailPanel] Error:', error)
+      console.error('[LeadDetailPanel] Error al actualizar:', error)
+      alert('Error al cambiar estado: ' + error)
     }
   }
 

@@ -144,16 +144,24 @@ export default function AgendarTurnoPage() {
           payload.datos_envio = datosEnvio
         }
 
+        console.log('[agendar-turno] Enviando payload:', JSON.stringify(payload, null, 2))
+
         const res = await fetch("/api/turnos/agendar-con-codigo", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload)
         })
 
+        console.log('[agendar-turno] Response status:', res.status)
+        
         if (!res.ok) {
           const error = await res.json()
+          console.error('[agendar-turno] Error response:', error)
           throw new Error(error.error || "Error al agendar")
         }
+        
+        const data = await res.json()
+        console.log('[agendar-turno] Success:', data)
       } else {
         // Sin código, usar endpoint normal
         const payload: any = {
@@ -191,6 +199,8 @@ export default function AgendarTurnoPage() {
       
       setStep(5)
     } catch (error: any) {
+      console.error('[agendar-turno] Catch error:', error)
+      console.error('[agendar-turno] Error message:', error.message)
       toast({ 
         title: "Error", 
         description: error.message, 
