@@ -28,7 +28,6 @@ interface Pedido {
   notas: string | null
   // Datos del pedido
   productos: any
-  cotizaciones: any[]
   forma_pago: string
   total: number
   estado_pago: string

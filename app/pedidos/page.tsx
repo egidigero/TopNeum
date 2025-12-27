@@ -45,20 +45,6 @@ export default async function PedidosPage() {
         LEFT JOIN products pr ON pr.sku = pi.producto_sku
         WHERE pi.pedido_id = p.id
       ) as items,
-      -- Cotizaciones (productos mostrados al cliente)
-      (
-        SELECT COALESCE(json_agg(
-          json_build_object(
-            'id', lcot.id,
-            'productos_mostrados', lcot.productos_mostrados,
-            'precio_total_contado', lcot.precio_total_contado,
-            'precio_total_3cuotas', lcot.precio_total_3cuotas,
-            'region', lcot.region,
-            'created_at', lcot.created_at
-          ) ORDER BY lcot.created_at DESC
-        ), '[]'::json)
-        FROM lead_cotizaciones lcot WHERE lcot.lead_id = l.id
-      ) as cotizaciones,
       -- Datos de turno/envío (tabla turnos unificada)
       t.id as turno_id,
       t.tipo as tipo_entrega,
@@ -113,7 +99,6 @@ export default async function PedidosPage() {
       codigo_postal: p.codigo_postal || null,
       // Productos
       productos: productos,
-      cotizaciones: p.cotizaciones || [],
       notas: p.notas || null,
       // Datos del pedido
       forma_pago: String(p.forma_pago || 'Sin especificar'),
